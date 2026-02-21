@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/dist
+/build
+*.tgz
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+
+# Vercel
+.vercel
+.vercelignore
+
+# Database
+*.db
+*.sqlite
+db.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local development
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Config files with secrets
+firebase-key.json
+credentials.json
+service-account-key.json
+
+# Supabase
+supabase/functions/*/node_modules

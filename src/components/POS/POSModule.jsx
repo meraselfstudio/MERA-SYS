@@ -131,9 +131,9 @@ const POSModule = () => {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading products...</div>;
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background">
+        <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-background">
             {/* Left Panel: Products */}
-            <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden bg-surface-950">
+            <div className="flex-1 flex flex-col p-3 lg:p-4 gap-3 lg:gap-4 overflow-hidden bg-surface-950">
 
                 {/* Categories */}
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -141,7 +141,7 @@ const POSModule = () => {
                         <button
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
+                            className={`px-4 lg:px-5 py-2 rounded-xl text-xs lg:text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
                                 ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
                                 : 'bg-surface-800 text-gray-400 border-white/10 hover:border-primary/50 hover:text-white'
                                 }`}
@@ -151,8 +151,8 @@ const POSModule = () => {
                     ))}
                 </div>
 
-                {/* Product List - Vertical Layout */}
-                <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                {/* Product List - Mobile Responsive Grid */}
+                <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 content-start">
                     {filteredProducts.map(product => {
                         let displayPrice = product.price || product.harga;
                         if (product.tipe_harga === 'bertingkat') {
@@ -163,17 +163,17 @@ const POSModule = () => {
                             <button
                                 key={product.id}
                                 onClick={() => addToCart(product)}
-                                className="w-full p-4 rounded-xl transition-all border border-white/10 hover:border-primary group flex items-center justify-between text-left"
+                                className="w-full p-3 lg:p-4 rounded-xl transition-all border border-white/10 hover:border-primary group flex items-center justify-between text-left"
                                 style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}
                             >
                                 <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white">{product.name || product.nama}</h3>
-                                    <div className="font-bold text-gray-900 dark:text-white text-sm mt-1">
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm lg:text-base">{product.name || product.nama}</h3>
+                                    <div className="font-bold text-gray-900 dark:text-white text-xs lg:text-sm mt-1">
                                         {formatCurrency(displayPrice)}
-                                        {product.tipe_harga === 'bertingkat' && <span className="text-xs font-normal text-gray-400 ml-1">+tier</span>}
+                                        {product.tipe_harga === 'bertingkat' && <span className="text-[10px] lg:text-xs font-normal text-gray-400 ml-1">+tier</span>}
                                     </div>
                                 </div>
-                                <div className="h-8 w-8 rounded-full bg-surface-900 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-colors">
+                                <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-full bg-surface-900 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
                                     <Plus size={16} />
                                 </div>
                             </button>
@@ -182,22 +182,21 @@ const POSModule = () => {
                 </div>
             </div>
 
-            {/* Right Panel: Cart */}
-            <div className="w-96 flex flex-col h-full border-l border-white/10 z-10" style={{ background: 'rgba(15,2,3,0.95)', boxShadow: '-4px 0 24px rgba(0,0,0,0.5)' }}>
-                <div className="p-4 border-b border-white/10 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <h2 className="font-bold text-lg flex items-center gap-2 text-gray-900 dark:text-white">
-                        <ShoppingCart size={20} className="text-primary" />
+            {/* Right Panel: Cart - 50vh on Mobile, Full height on Desktop */}
+            <div className="w-full lg:w-96 h-[50vh] lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-white/10 z-10 shrink-0" style={{ background: 'rgba(15,2,3,0.95)', boxShadow: '-4px 0 24px rgba(0,0,0,0.5)' }}>
+                <div className="p-3 lg:p-4 border-b border-white/10 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <h2 className="font-bold text-base lg:text-lg flex items-center gap-2 text-gray-900 dark:text-white">
+                        <ShoppingCart size={18} className="text-primary" />
                         Order
                     </h2>
-                    <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">{cart.reduce((acc, item) => acc + item.qty, 0)} items</span>
+                    <span className="text-[10px] lg:text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">{cart.reduce((acc, item) => acc + item.qty, 0)} items</span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
                     {cart.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <ShoppingCart size={48} className="mb-4 opacity-20" />
-                            <p className="font-medium"></p>
-                            <p className="text-xs"></p>
+                            <ShoppingCart size={40} className="mb-2 opacity-20" />
+                            <p className="font-medium text-xs lg:text-sm">Cart is empty</p>
                         </div>
                     ) : (
                         cart.map(item => {
@@ -213,29 +212,29 @@ const POSModule = () => {
                                     const extra = (item.qty - 3) * (item.tier_lebih || 0);
                                     itemTotal = baseThree + extra;
                                 }
-                                singlePriceDisplay = itemTotal / item.qty; // Show effective average price
+                                singlePriceDisplay = itemTotal / item.qty;
                             } else {
                                 singlePriceDisplay = item.price || item.harga || 0;
                                 itemTotal = singlePriceDisplay * item.qty;
                             }
 
                             return (
-                                <div key={item.id} className="flex flex-col gap-2 p-3 rounded-xl border border-white/10" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)' }}>
+                                <div key={item.id} className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl border border-white/10" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)' }}>
                                     <div className="flex justify-between items-start">
-                                        <span className="text-sm font-bold text-gray-900 dark:text-white w-3/4">{item.name || item.nama}</span>
-                                        <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors">
-                                            <Trash2 size={16} />
+                                        <span className="text-xs lg:text-sm font-bold text-gray-900 dark:text-white w-3/4 line-clamp-2">{item.name || item.nama}</span>
+                                        <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1">
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center bg-surface-900 rounded-lg shadow-sm border border-white/10">
-                                            <button onClick={() => updateQty(item.id, -1)} className="p-1 px-2 hover:bg-surface-700 text-gray-400 rounded-l-lg"><Minus size={10} /></button>
-                                            <span className="px-2 text-sm font-bold w-6 text-center text-gray-900 dark:text-white">{item.qty}</span>
-                                            <button onClick={() => updateQty(item.id, 1)} className="p-1 px-2 hover:bg-surface-700 text-gray-400 rounded-r-lg"><Plus size={10} /></button>
+                                            <button onClick={() => updateQty(item.id, -1)} className="p-1.5 hover:bg-surface-700 text-gray-400 rounded-l-lg"><Minus size={12} /></button>
+                                            <span className="px-2 text-xs lg:text-sm font-bold w-6 text-center text-gray-900 dark:text-white">{item.qty}</span>
+                                            <button onClick={() => updateQty(item.id, 1)} className="p-1.5 hover:bg-surface-700 text-gray-400 rounded-r-lg"><Plus size={12} /></button>
                                         </div>
                                         <div className="text-right">
-                                            <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(itemTotal)}</div>
-                                            <div className="text-[10px] text-gray-500">@{formatCurrency(singlePriceDisplay)} {item.tipe_harga === 'bertingkat' && 'avg'}</div>
+                                            <div className="font-bold text-xs lg:text-sm text-gray-900 dark:text-white">{formatCurrency(itemTotal)}</div>
+                                            <div className="text-[9px] lg:text-[10px] text-gray-500">@{formatCurrency(singlePriceDisplay)} {item.tipe_harga === 'bertingkat' && 'avg'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -244,27 +243,26 @@ const POSModule = () => {
                     )}
                 </div>
 
+                {/* Bottom Checkout Section */}
                 <div className="p-3 bg-surface-900 border-t border-white/10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)]">
-                    {/* Customer Info */}
-                    <div className="mb-2 space-y-2">
-                        <div className="flex items-center gap-2 bg-surface-800 rounded-lg border border-white/10 px-3 py-2.5">
-                            <User size={18} className="text-gray-400" />
+                    <div className="mb-1 space-y-2">
+                        <div className="flex items-center gap-2 bg-surface-800 rounded-lg border border-white/10 px-3 py-2">
+                            <User size={16} className="text-gray-400" />
                             <input
                                 type="text"
                                 placeholder="Customer Name"
-                                className="bg-transparent flex-1 text-sm outline-none text-gray-900 dark:text-white placeholder-gray-500 font-medium"
+                                className="bg-transparent flex-1 text-xs lg:text-sm outline-none text-gray-900 dark:text-white placeholder-gray-500 font-medium"
                                 value={customer.name}
                                 onChange={e => setCustomer({ ...customer, name: e.target.value })}
                             />
                         </div>
 
-                        {/* Type + Payment on ONE line */}
                         <div className="flex gap-1.5">
                             {['Booking', 'OTS'].map(type => (
                                 <button
                                     key={type}
                                     onClick={() => setCustomer({ ...customer, type })}
-                                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all border ${customer.type === type
+                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${customer.type === type
                                         ? 'bg-primary text-white border-primary shadow-sm'
                                         : 'bg-surface-800 text-gray-400 border-white/10 hover:text-white'
                                         }`}
@@ -276,7 +274,7 @@ const POSModule = () => {
                                 <button
                                     key={method}
                                     onClick={() => setCustomer({ ...customer, payment: method })}
-                                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all border ${customer.payment === method
+                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${customer.payment === method
                                         ? method === 'QRIS'
                                             ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                                             : 'border-green-500 bg-green-500/10 text-green-400'
@@ -288,71 +286,68 @@ const POSModule = () => {
                             ))}
                         </div>
 
-                        <div className="space-y-3 mb-6">
-                            <div className="flex justify-between text-2xl font-black text-gray-900 dark:text-white px-4 py-3">
-                                <span>Total</span>
-                                <span>{formatCurrency(total)}</span>
-                            </div>
+                        <div className="flex justify-between items-center text-lg lg:text-2xl font-black text-gray-900 dark:text-white px-2 py-2">
+                            <span>Total</span>
+                            <span>{formatCurrency(total)}</span>
                         </div>
 
                         <button
                             onClick={handlePay}
                             disabled={!canPay}
-                            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95 ${canPay
+                            className={`w-full py-3 lg:py-4 rounded-xl font-bold text-white text-sm lg:text-base shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95 ${canPay
                                 ? 'bg-primary hover:bg-primary-dark shadow-primary/20 cursor-pointer'
                                 : 'bg-surface-700 opacity-50 cursor-not-allowed'
                                 }`}
                         >
-                            <CreditCard size={20} />
-                            {!customer.name.trim() ? 'Enter Customer Name' : !cart.length ? 'Add Items First' : 'Pay Now'}
+                            <CreditCard size={18} />
+                            {!customer.name.trim() ? 'Enter Customer' : !cart.length ? 'Add Items' : 'Pay Now'}
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Receipt Preview Modal */}
-                {showReceiptPreview && (
-                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
-                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                                <h3 className="font-bold text-lg text-gray-900">Receipt Preview</h3>
-                                <button onClick={() => setShowReceiptPreview(false)} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
-                                    <X size={20} />
-                                </button>
-                            </div>
+            {/* Receipt Preview Modal - Ditarik keluar dari hirarki panel agar Z-Index Mutlak */}
+            {showReceiptPreview && (
+                <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-lg text-gray-900">Receipt Preview</h3>
+                            <button onClick={() => setShowReceiptPreview(false)} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                            <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
-                                {/* Actual Receipt Component to Display */}
-                                <div className="shadow-lg">
-                                    <Receipt
-                                        ref={receiptRef}
-                                        cart={cart}
-                                        total={total}
-                                        subtotal={total}
-                                        paymentMethod={customer.payment}
-                                        customer={customer}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="p-4 border-t bg-white flex gap-3">
-                                <button
-                                    onClick={() => setShowReceiptPreview(false)}
-                                    className="flex-1 py-3 rounded-xl font-bold text-gray-400 border border-white/10 hover:bg-surface-800 hover:text-gray-900 dark:text-white transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleConfirmAndPay}
-                                    className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                                >
-                                    <Printer size={18} />
-                                    Pay & Print
-                                </button>
+                        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
+                            <div className="shadow-lg">
+                                <Receipt
+                                    ref={receiptRef}
+                                    cart={cart}
+                                    total={total}
+                                    subtotal={total}
+                                    paymentMethod={customer.payment}
+                                    customer={customer}
+                                />
                             </div>
                         </div>
+
+                        <div className="p-4 border-t bg-white flex gap-3">
+                            <button
+                                onClick={() => setShowReceiptPreview(false)}
+                                className="flex-1 py-3 rounded-xl font-bold text-gray-400 border border-white/10 hover:bg-surface-800 hover:text-gray-900 dark:text-white transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmAndPay}
+                                className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                            >
+                                <Printer size={18} />
+                                Pay & Print
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

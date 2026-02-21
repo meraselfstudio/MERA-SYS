@@ -22,13 +22,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [showShiftSummary, setShowShiftSummary] = useState(false); // State for modal
 
-    // Auto-close sidebar on mobile when route changes
-    React.useEffect(() => {
-        if (window.innerWidth < 768 && onClose) {
-            onClose();
-        }
-    }, [location.pathname, onClose]);
-
     // Indonesian Labels, Solid Style
     const navItems = [
         { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'DASHBOARD' },
@@ -40,13 +33,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     return (
         <>
+            {/* Desktop Sidebar */}
             <aside
                 className={clsx(
-                    "fixed inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col backdrop-blur-md",
-                    "bg-surface-950/95 border-r border-white/5 md:border-r-0",
-                    "md:relative md:translate-x-0",
-                    isOpen ? "translate-x-0" : "-translate-x-full",
-                    collapsed ? "md:w-24 w-64" : "w-64 md:w-80"
+                    "hidden md:flex inset-y-0 left-0 z-50 transition-all duration-300 flex-col backdrop-blur-md",
+                    "bg-surface-950/95 border-r border-white/5",
+                    "relative translate-x-0",
+                    collapsed ? "w-24" : "w-80"
                 )}
             >
                 {/* Header / Logo */}
@@ -133,6 +126,37 @@ const Sidebar = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             </aside>
+
+            {/* Mobile Bottom Navigation Layout */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-surface-950/95 backdrop-blur-xl border-t border-white/10 pb-safe">
+                <nav className="flex items-center justify-around px-2 py-3">
+                    {navItems.map((item) => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) => clsx(
+                                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
+                                isActive
+                                    ? "text-primary scale-110"
+                                    : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            {React.cloneElement(item.icon, { size: 22 })}
+                            <span className="text-[9px] font-bold tracking-wider uppercase">
+                                {item.label.split(' ')[0]} {/* Show only first word on mobile for space */}
+                            </span>
+                        </NavLink>
+                    ))}
+                    {/* Logout Button on Mobile */}
+                    <button
+                        onClick={() => setShowShiftSummary(true)}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl text-red-500 hover:text-red-400 transition-all duration-300"
+                    >
+                        <LogOut size={22} />
+                        <span className="text-[9px] font-bold tracking-wider uppercase">LOGOUT</span>
+                    </button>
+                </nav>
+            </div>
 
             {/* Shift Summary Modal */}
             {showShiftSummary && <ShiftSummary onClose={() => setShowShiftSummary(false)} />}

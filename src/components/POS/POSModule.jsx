@@ -4,6 +4,7 @@ import { ShoppingCart, Trash2, Plus, Minus, User, CreditCard, Printer, X } from 
 import Receipt from './Receipt';
 import { useReactToPrint } from 'react-to-print';
 import { useFinance } from '../../context/FinanceContext';
+import html2canvas from 'html2canvas';
 
 const POSModule = () => {
     const [products, setProducts] = useState([]);
@@ -43,6 +44,55 @@ const POSModule = () => {
             setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
             setShowReceiptPreview(false);
         }, 500);
+    };
+
+    const handleShareReceipt = async () => {
+        if (!receiptRef.current) return;
+        try {
+            const canvas = await html2canvas(receiptRef.current, { scale: 2 });
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], `receipt-${Date.now()}.png`, { type: 'image/png' });
+
+            // Complete transaction BEFORE sharing block
+            addTransaction({
+                id: `TRX-${Date.now()}`,
+                desc: `${customer.type} - ${customer.name}`,
+                amount: total,
+                type: 'IN',
+                category: customer.type,
+                method: customer.payment,
+                items: cart
+            });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Receipt',
+                    text: `Receipt for ${customer.name}`,
+                    files: [file]
+                });
+            } else {
+                // Fallback to download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            setTimeout(() => {
+                setCart([]);
+                setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
+                setShowReceiptPreview(false);
+            }, 500);
+
+        } catch (err) {
+            console.error("Error sharing receipt:", err);
+            // Fallback to print if share fails
+            handleConfirmAndPay();
+        }
     };
 
     useEffect(() => {
@@ -131,7 +181,7 @@ const POSModule = () => {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading products...</div>;
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-background">
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden bg-background">
             {/* Left Panel: Products */}
             <div className="flex-1 flex flex-col p-3 lg:p-4 gap-3 lg:gap-4 overflow-hidden bg-surface-950">
 
@@ -330,20 +380,30 @@ const POSModule = () => {
                             </div>
                         </div>
 
-                        <div className="p-4 border-t bg-white flex gap-3">
+                        <div className="p-4 border-t bg-white flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={() => setShowReceiptPreview(false)}
-                                className="flex-1 py-3 rounded-xl font-bold text-gray-400 border border-white/10 hover:bg-surface-800 hover:text-gray-900 dark:text-white transition-all"
+                                className="flex-1 py-3 rounded-xl font-bold text-gray-400 border border-white/10 hover:bg-surface-800 hover:text-gray-900 transition-all"
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleConfirmAndPay}
-                                className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                            >
-                                <Printer size={18} />
-                                Pay & Print
-                            </button>
+                            <div className="flex flex-1 gap-2">
+                                <button
+                                    onClick={handleShareReceipt}
+                                    className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2 shadow-lg"
+                                    title="Share or Download Image (Mobile Friendly)"
+                                >
+                                    Share
+                                </button>
+                                <button
+                                    onClick={handleConfirmAndPay}
+                                    className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                                    title="Browser Print Dialog"
+                                >
+                                    <Printer size={18} />
+                                    Print
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { Palette, Calendar, Sparkles, Users, Clock, Minus, Plus, CheckCircle, Camera, MessageCircle, Phone } from 'lucide-react';
 
 export default function CustomerBooking() {
     const [step, setStep] = useState(1);
@@ -35,6 +36,7 @@ export default function CustomerBooking() {
         jam: '',
         nama: '',
         email: '',
+        phone: '',
         instagram: '',
         tipeBayar: 'KEEPSLOT'
     });
@@ -88,6 +90,7 @@ export default function CustomerBooking() {
         const payload = {
             nama: form.nama,
             email: form.email,
+            whatsapp: form.phone,
             instagram: form.instagram,
             kategori: form.kategori,
             paket: form.paket.name,
@@ -333,6 +336,10 @@ export default function CustomerBooking() {
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4 mb-8">
                             <input type="text" required placeholder="NAMA LENGKAP" value={form.nama} onChange={e => setForm({ ...form, nama: e.target.value })} className="w-full bg-black border border-white/10 p-5 rounded-xl text-white font-bold uppercase tracking-wider text-sm outline-none focus:border-white transition-colors" />
+                            <div className="relative">
+                                <Phone size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input type="tel" required placeholder="WHATSAPP (08...)" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full bg-black border border-white/10 p-5 pl-12 rounded-xl text-white font-bold uppercase tracking-wider text-sm outline-none focus:border-white transition-colors" />
+                            </div>
                             <input type="email" required placeholder="EMAIL (UNTUK FILE)" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full bg-black border border-white/10 p-5 rounded-xl text-white font-bold uppercase tracking-wider text-sm outline-none focus:border-white transition-colors" />
                             <input type="text" required placeholder="INSTAGRAM (@USERNAME)" value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} className="w-full bg-black border border-white/10 p-5 rounded-xl text-white font-bold uppercase tracking-wider text-sm outline-none focus:border-white transition-colors" />
                         </div>
@@ -393,7 +400,20 @@ export default function CustomerBooking() {
                         <p className="text-xs font-bold text-gray-400">PAKET: <span className="text-white">{ticketData?.paket}</span></p>
                     </div>
 
-                    <div className="w-full h-24 bg-white rounded-xl mb-4 flex items-center justify-center"><Camera className="text-black" /></div>
+                    <div className="w-full h-24 bg-white rounded-xl mb-6 flex items-center justify-center"><Camera className="text-black" /></div>
+
+                    <a
+                        href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                            `Halo Méra Studio!\n\nSaya ingin konfirmasi booking:\nID: ${shortId}\nNama: ${ticketData?.nama}\nJadwal: ${ticketData?.tanggal} | ${ticketData?.jam}\nPaket: ${ticketData?.paket}\n\nLink OS: os.meraselfstudio.com`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-[#25D366] text-white py-4 rounded-xl font-black uppercase tracking-widest hover:brightness-110 transition-all mb-4"
+                    >
+                        <MessageCircle size={20} />
+                        Konfirmasi via WA
+                    </a>
+
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">Screenshot for entry</p>
                 </div>
             </div>

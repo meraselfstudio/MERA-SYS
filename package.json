@@ -20,7 +20,7 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/supabase-js": "^2.97.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
     "html2canvas": "^1.4.1",

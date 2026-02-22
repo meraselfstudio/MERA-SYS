@@ -77,13 +77,21 @@ export const FinanceProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         const fetchInitialData = async () => {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Finance data initialization timeout")), 5000)
+            );
+
             try {
-                const [txData, expData, bookData, attData] = await Promise.all([
-                    supabase.from('transactions').select('*'),
-                    supabase.from('expenses').select('*'),
-                    supabase.from('bookings').select('*'),
-                    supabase.from('attendance').select('*')
+                const [txData, expData, bookData, attData] = await Promise.race([
+                    Promise.all([
+                        supabase.from('transactions').select('*'),
+                        supabase.from('expenses').select('*'),
+                        supabase.from('bookings').select('*'),
+                        supabase.from('attendance').select('*')
+                    ]),
+                    timeoutPromise
                 ]);
 
                 if (txData.data) {
@@ -115,13 +123,16 @@ export const FinanceProvider = ({ children }) => {
                 if (bookData.data) {
                     const mappedBook = bookData.data.map(b => ({
                         id: b.id,
-                        name: b.customer_name,
-                        package: b.package_type,
-                        price: 0, // Would need complex query or schema change for exact price
-                        tanggal: b.booking_date,
-                        jam: b.time_slot,
-                        status: b.status === 'confirmed' ? 'PAID' : b.status.toUpperCase(),
-                        pmt: 'QRIS',
+                        name: b.nama,
+                        phone: b.whatsapp || b.phone,
+                        package: b.paket,
+                        price: b.total_tagihan || 0,
+                        tanggal: b.tanggal,
+                        jam: b.jam,
+                        date: b.tanggal, // Alias for UI consistency
+                        time: b.jam,     // Alias for UI consistency
+                        status: b.status,
+                        pmt: b.tipe_bayar,
                         createdAt: b.created_at
                     }));
                     setBookings(mappedBook);
@@ -147,33 +158,39 @@ export const FinanceProvider = ({ children }) => {
                 setProducts(load(KEYS.products, INIT_PRODUCTS));
                 setAbsensi(load(todayKey(), []));
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         fetchInitialData();
 
         // Setup Realtime Subscriptions
-        const channels = supabase.channel('custom-all-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'transactions' },
-                (payload) => {
-                    // In a complete implementation, we'd handle insert/update/delete specifically
-                    fetchInitialData();
-                }
-            )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'bookings' },
-                (payload) => {
-                    fetchInitialData();
-                }
-            )
-            .subscribe();
+        let channel;
+        try {
+            channel = supabase.channel('custom-all-channel')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'transactions' },
+                    (payload) => {
+                        // In a complete implementation, we'd handle insert/update/delete specifically
+                        fetchInitialData();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'bookings' },
+                    (payload) => {
+                        fetchInitialData();
+                    }
+                )
+                .subscribe();
+        } catch (err) {
+            console.error("Finance subscription failed:", err);
+        }
 
         return () => {
-            supabase.removeChannel(channels);
+            isMounted = false;
+            if (channel) supabase.removeChannel(channel);
         };
     }, []);
 
@@ -233,13 +250,30 @@ export const FinanceProvider = ({ children }) => {
         });
     }, [addTransaction]);
 
-    const addBooking = useCallback((booking) => {
+    const addBooking = useCallback(async (booking) => {
         const id = booking.id || `BK-${Date.now()}`;
-        setBookings(prev => [...prev, {
+        const newBooking = {
             ...booking,
             id,
             createdAt: new Date().toISOString(),
-        }]);
+        };
+
+        // Pre-emptive UI update
+        setBookings(prev => [...prev, newBooking]);
+
+        const payload = {
+            nama: booking.name,
+            whatsapp: booking.phone || booking.whatsapp,
+            tanggal: booking.tanggal || booking.date,
+            jam: booking.jam || booking.time,
+            paket: booking.package,
+            total_tagihan: Number(booking.price),
+            status: booking.status,
+            tipe_bayar: booking.pmt
+        };
+
+        const { error } = await supabase.from('bookings').insert([payload]);
+        if (error) console.error("Failed to sync new booking to Supabase:", error);
 
         // Auto-create transaction if created as PAID
         if (booking.status === 'PAID') {
@@ -257,10 +291,27 @@ export const FinanceProvider = ({ children }) => {
         }
     }, [addTransaction]);
 
-    const updateBooking = useCallback((id, updates) => {
+    const updateBooking = useCallback(async (id, updates) => {
         setBookings(prev => {
             const currentBooking = prev.find(b => b.id === id);
             const merged = { ...currentBooking, ...updates };
+
+            // Supabase Persistence
+            const syncToSupabase = async () => {
+                const payload = {};
+                if (updates.name) payload.nama = updates.name;
+                if (updates.phone) payload.whatsapp = updates.phone;
+                if (updates.date) payload.tanggal = updates.date;
+                if (updates.time) payload.jam = updates.time;
+                if (updates.package) payload.paket = updates.package;
+                if (updates.price) payload.total_tagihan = Number(updates.price);
+                if (updates.status) payload.status = updates.status;
+                if (updates.pmt) payload.tipe_bayar = updates.pmt;
+
+                const { error } = await supabase.from('bookings').update(payload).eq('id', id);
+                if (error) console.error("Failed to sync update to Supabase:", error);
+            };
+            syncToSupabase();
 
             if (updates.status === 'PAID' && currentBooking?.status !== 'PAID') {
                 // Auto-create transaction if payment method is provided
@@ -284,8 +335,10 @@ export const FinanceProvider = ({ children }) => {
         });
     }, [addTransaction]);
 
-    const deleteBooking = useCallback((id) => {
+    const deleteBooking = useCallback(async (id) => {
         setBookings(prev => prev.filter(b => b.id !== id));
+        const { error } = await supabase.from('bookings').delete().eq('id', id);
+        if (error) console.error("Failed to delete booking from Supabase:", error);
     }, []);
 
     const updateCrew = useCallback((id, field, val) => {

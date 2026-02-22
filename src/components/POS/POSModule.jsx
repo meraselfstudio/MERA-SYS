@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getProducts } from '../../services/productService';
-import { ShoppingCart, Trash2, Plus, Minus, User, CreditCard, Printer, X } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, User, CreditCard, Printer, X, Calendar, CheckCircle2, Camera, PackagePlus, RefreshCw, AlertTriangle, ArrowRight } from 'lucide-react';
 import Receipt from './Receipt';
 import { useReactToPrint } from 'react-to-print';
 import { useFinance } from '../../context/FinanceContext';
 import html2canvas from 'html2canvas';
+import { createClient } from '@supabase/supabase-js';
+
+// === GANTI DENGAN KREDENSIAL SUPABASE-MU ===
+const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL';
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const POSModule = () => {
+    // --- STATE DATA POS ---
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -14,33 +21,169 @@ const POSModule = () => {
     const [loading, setLoading] = useState(true);
     const [showReceiptPreview, setShowReceiptPreview] = useState(false);
 
-    const receiptRef = useRef();
+    // --- STATE JADWAL SUPABASE ---
+    const [queueBookings, setQueueBookings] = useState([]); // Lobby (KEEPSLOT / AWAITING_CONFIRMATION)
+    const [activeBookings, setActiveBookings] = useState([]); // In-Studio (ARRIVED)
+    const [loadingBookings, setLoadingBookings] = useState(false);
+    const [selectedBookingForCheckout, setSelectedBookingForCheckout] = useState(null);
 
+    const receiptRef = useRef();
     const { addTransaction } = useFinance();
 
-    const handlePrint = useReactToPrint({
-        content: () => receiptRef.current,
-        documentTitle: `Receipt-${new Date().getTime()}`,
-        onAfterPrint: () => {
-            setCart([]);
-            setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
-            setShowReceiptPreview(false);
-        }
-    });
+    // ==========================================
+    // 1. INITIAL FETCH
+    // ==========================================
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const prodData = await getProducts();
+                setProducts(prodData);
+                await fetchTodaySchedule();
+            } catch (error) {
+                console.error("Gagal memuat data awal:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInitialData();
+    }, []);
 
-    const handleConfirmAndPay = () => {
-        // 1. Save Transaction to Database FIRST
+    const fetchTodaySchedule = async () => {
+        setLoadingBookings(true);
+        try {
+            const today = new Date().toLocaleDateString('en-CA');
+            const { data, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .eq('tanggal', today)
+                .in('status', ['KEEPSLOT', 'AWAITING_CONFIRMATION', 'ARRIVED'])
+                .order('jam', { ascending: true });
+
+            if (error) throw error;
+
+            if (data) {
+                setQueueBookings(data.filter(b => b.status === 'KEEPSLOT' || b.status === 'AWAITING_CONFIRMATION'));
+                setActiveBookings(data.filter(b => b.status === 'ARRIVED'));
+            }
+        } catch (error) {
+            console.error("Gagal menarik jadwal:", error);
+        } finally {
+            setLoadingBookings(false);
+        }
+    };
+
+    // ==========================================
+    // 2. LOGIKA OPERASIONAL (VERIFIKASI -> SESI -> CHECKOUT)
+    // ==========================================
+
+    // A. KRU MEMVERIFIKASI KEDATANGAN (Pindah dari Lobby ke Studio)
+    const handleVerifyArrival = async (id) => {
+        try {
+            await supabase.from('bookings').update({ status: 'ARRIVED' }).eq('id', id);
+            fetchTodaySchedule(); // Refresh data
+        } catch (error) {
+            console.error("Gagal verifikasi kedatangan:", error);
+            alert("Gagal update status database.");
+        }
+    };
+
+    // B. KRU MENARIK PELANGGAN KE KASIR (Pindah dari Studio ke Keranjang)
+    const handleStartCheckout = (booking) => {
+        setSelectedBookingForCheckout(booking);
+        setCustomer({
+            name: booking.nama,
+            type: 'Booking',
+            payment: booking.tipe_bayar === 'PAID' ? 'QRIS' : 'CASH'
+        });
+
+        // Masukkan paket dasar dari Web ke keranjang sebagai Item Utama
+        const webItemName = `[WEB] ${booking.paket} ${booking.background ? `(${booking.background})` : ''}`;
+        const bookingItem = {
+            id: booking.id,
+            name: webItemName,
+            price: booking.total_tagihan, // Grand total mutlak dari web
+            qty: 1,
+            tipe_harga: 'normal'
+        };
+
+        setCart([bookingItem]);
+    };
+
+    // C. BATALKAN CHECKOUT SEMENTARA (Jika pelanggan belum selesai milih)
+    const handleCancelCheckout = () => {
+        setSelectedBookingForCheckout(null);
+        setCart([]);
+        setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
+    };
+
+    // ==========================================
+    // 3. FUNGSI KERANJANG & CHECKOUT AKHIR
+    // ==========================================
+    const addToCart = (product) => {
+        const existingItem = cart.find(item => item.id === product.id);
+        if (existingItem) setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+        else setCart([...cart, { ...product, qty: 1 }]);
+    };
+
+    const updateQty = (id, delta) => setCart(cart.map(item => item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item));
+    const removeFromCart = (id) => setCart(cart.filter(item => item.id !== id));
+
+    const calculateTotal = () => {
+        return cart.reduce((total, item) => {
+            if (item.tipe_harga === 'bertingkat') {
+                if (item.qty === 1) return total + (item.tier_1 || 0);
+                if (item.qty === 2) return total + (item.tier_2 || item.tier_1 || 0);
+                if (item.qty === 3) return total + (item.tier_3 || item.tier_2 || item.tier_1 || 0);
+                if (item.qty > 3) return total + (item.tier_3 || item.tier_2 || item.tier_1 || 0) + ((item.qty - 3) * (item.tier_lebih || 0));
+                return total;
+            } else {
+                return total + ((item.price || item.harga || 0) * item.qty);
+            }
+        }, 0);
+    };
+
+    const total = calculateTotal();
+    const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+    const canPay = cart.length > 0 && customer.name.trim() !== '' && !!customer.type && !!customer.payment;
+
+    // --- EKSEKUSI TRANSAKSI FINAL (TUTUP BUKU & UPDATE SUPABASE) ---
+    const completeTransaction = async () => {
         addTransaction({
             id: `TRX-${Date.now()}`,
             desc: `${customer.type} - ${customer.name}`,
             amount: total,
             type: 'IN',
-            category: customer.type, // 'Booking' or 'OTS'
+            category: customer.type,
             method: customer.payment,
             items: cart
         });
 
-        // 2. Trigger Print Dialog
+        // Tandai selesai di Supabase
+        if (selectedBookingForCheckout) {
+            try {
+                await supabase.from('bookings').update({ status: 'COMPLETED' }).eq('id', selectedBookingForCheckout.id);
+                fetchTodaySchedule();
+            } catch (error) {
+                console.error("Gagal update status Supabase:", error);
+            }
+        }
+    };
+
+    const resetCartAndCheckout = () => {
+        setCart([]);
+        setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
+        setSelectedBookingForCheckout(null);
+        setShowReceiptPreview(false);
+    };
+
+    const handlePrint = useReactToPrint({
+        content: () => receiptRef.current,
+        documentTitle: `Receipt-${new Date().getTime()}`,
+        onAfterPrint: () => resetCartAndCheckout()
+    });
+
+    const handleConfirmAndPay = async () => {
+        await completeTransaction();
         handlePrint();
     };
 
@@ -51,360 +194,278 @@ const POSModule = () => {
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             const file = new File([blob], `receipt-${Date.now()}.png`, { type: 'image/png' });
 
-            // Complete transaction BEFORE sharing block
-            addTransaction({
-                id: `TRX-${Date.now()}`,
-                desc: `${customer.type} - ${customer.name}`,
-                amount: total,
-                type: 'IN',
-                category: customer.type,
-                method: customer.payment,
-                items: cart
-            });
+            await completeTransaction();
 
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: 'Receipt',
-                    text: `Receipt for ${customer.name}`,
-                    files: [file]
-                });
-
-                // Only clear if share is successful
-                setCart([]);
-                setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
-                setShowReceiptPreview(false);
+                await navigator.share({ title: 'Receipt', text: `Receipt for ${customer.name}`, files: [file] });
+                resetCartAndCheckout();
             } else {
-                // Fallback to download
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                // Delay revoking to prevent mobile browser 404 bug when navigating to Blob
+                a.href = url; a.download = file.name; a.target = '_blank';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-                setCart([]);
-                setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
-                setShowReceiptPreview(false);
+                resetCartAndCheckout();
             }
-
         } catch (err) {
             console.error("Error sharing receipt:", err);
-            // Fallback to print if share fails
             handleConfirmAndPay();
         }
     };
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const data = await getProducts();
-                setProducts(data);
-            } catch (error) {
-                console.error("Failed to load products", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
+    if (loading) return <div className="p-8 text-center text-gray-500 font-bold uppercase tracking-widest animate-pulse">Memuat Studio OS iMac...</div>;
 
     const categories = ['All', ...new Set(products.map(p => p.kategori).filter(Boolean))];
-
-    const filteredProducts = selectedCategory === 'All'
-        ? products
-        : products.filter(p => p.kategori === selectedCategory);
-
-    const addToCart = (product) => {
-        const existingItem = cart.find(item => item.id === product.id);
-        if (existingItem) {
-            setCart(cart.map(item =>
-                item.id === product.id ? { ...item, qty: item.qty + 1 } : item
-            ));
-        } else {
-            setCart([...cart, { ...product, qty: 1 }]);
-        }
-    };
-
-    const updateQty = (id, delta) => {
-        setCart(cart.map(item => {
-            if (item.id === id) {
-                const newQty = Math.max(1, item.qty + delta);
-                return { ...item, qty: newQty };
-            }
-            return item;
-        }));
-    };
-
-    const removeFromCart = (id) => {
-        setCart(cart.filter(item => item.id !== id));
-    };
-
-    const calculateTotal = () => {
-        return cart.reduce((total, item) => {
-            if (item.tipe_harga === 'bertingkat') {
-                if (item.qty === 1) return total + (item.tier_1 || 0);
-                if (item.qty === 2) return total + (item.tier_2 || item.tier_1 || 0);
-                if (item.qty === 3) return total + (item.tier_3 || item.tier_2 || item.tier_1 || 0);
-                if (item.qty > 3) {
-                    const baseThree = item.tier_3 || item.tier_2 || item.tier_1 || 0;
-                    const extra = (item.qty - 3) * (item.tier_lebih || 0);
-                    return total + baseThree + extra;
-                }
-                return total;
-            } else {
-                return total + ((item.price || item.harga || 0) * item.qty);
-            }
-        }, 0);
-    };
-
-    const total = calculateTotal();
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(val);
-    }
-
-    const handlePay = () => {
-        if (cart.length === 0) return;
-        if (!customer.name.trim()) return;
-        setShowReceiptPreview(true);
-    };
-
-    // All required fields must be filled to allow payment
-    const canPay = cart.length > 0 && customer.name.trim() !== '' && !!customer.type && !!customer.payment;
-
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading products...</div>;
+    const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.kategori === selectedCategory);
 
     return (
-        <div className="flex flex-col lg:flex-row h-full overflow-hidden bg-background">
-            {/* Left Panel: Products */}
-            <div className="flex-1 flex flex-col p-3 lg:p-4 gap-3 lg:gap-4 overflow-hidden bg-surface-950">
+        <div className="flex h-screen w-full overflow-hidden bg-[#050505] text-white font-sans selection:bg-[#800000]/30">
 
-                {/* Categories */}
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-4 lg:px-5 py-2 rounded-xl text-xs lg:text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
-                                ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                                : 'bg-surface-800 text-gray-400 border-white/10 hover:border-primary/50 hover:text-white'
-                                }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
+            {/* ========================================== */}
+            {/* PANEL 1: LOBBY (ANTREAN VERIFIKASI) - 25% */}
+            {/* ========================================== */}
+            <div className="w-1/4 h-full flex flex-col bg-[#0a0a0a] border-r border-white/10 shrink-0">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#111]">
+                    <div>
+                        <h2 className="font-black text-sm uppercase tracking-widest text-white flex items-center gap-2"><User size={16} className="text-[#800000]" /> 1. LOBBY</h2>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Antrean Belum Verifikasi</p>
+                    </div>
+                    <button onClick={fetchTodaySchedule} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Refresh Data">
+                        <RefreshCw size={14} className={`text-gray-400 ${loadingBookings ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
 
-                {/* Product List - Mobile Responsive Grid */}
-                <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 content-start">
-                    {filteredProducts.map(product => {
-                        let displayPrice = product.price || product.harga;
-                        if (product.tipe_harga === 'bertingkat') {
-                            displayPrice = product.tier_1;
-                        }
-
-                        return (
-                            <button
-                                key={product.id}
-                                onClick={() => addToCart(product)}
-                                className="w-full p-3 lg:p-4 rounded-xl transition-all border border-white/10 hover:border-primary group flex items-center justify-between text-left"
-                                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}
-                            >
-                                <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm lg:text-base">{product.name || product.nama}</h3>
-                                    <div className="font-bold text-gray-900 dark:text-white text-xs lg:text-sm mt-1">
-                                        {formatCurrency(displayPrice)}
-                                        {product.tipe_harga === 'bertingkat' && <span className="text-[10px] lg:text-xs font-normal text-gray-400 ml-1">+tier</span>}
-                                    </div>
-                                </div>
-                                <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-full bg-surface-900 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
-                                    <Plus size={16} />
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Right Panel: Cart - 50vh on Mobile, Full height on Desktop */}
-            <div className="w-full lg:w-96 h-[50vh] lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-white/10 z-10 shrink-0" style={{ background: 'rgba(15,2,3,0.95)', boxShadow: '-4px 0 24px rgba(0,0,0,0.5)' }}>
-                <div className="p-3 lg:p-4 border-b border-white/10 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <h2 className="font-bold text-base lg:text-lg flex items-center gap-2 text-gray-900 dark:text-white">
-                        <ShoppingCart size={18} className="text-primary" />
-                        Order
-                    </h2>
-                    <span className="text-[10px] lg:text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">{cart.reduce((acc, item) => acc + item.qty, 0)} items</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
-                    {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <ShoppingCart size={40} className="mb-2 opacity-20" />
-                            <p className="font-medium text-xs lg:text-sm">Cart is empty</p>
-                        </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    {loadingBookings ? (
+                        <p className="text-center text-gray-600 text-[10px] uppercase font-bold animate-pulse mt-10">Mencari Data...</p>
+                    ) : queueBookings.length === 0 ? (
+                        <p className="text-center text-gray-600 text-[10px] uppercase font-bold mt-10">Tidak ada antrean</p>
                     ) : (
-                        cart.map(item => {
-                            let itemTotal = 0;
-                            let singlePriceDisplay = 0;
-
-                            if (item.tipe_harga === 'bertingkat') {
-                                if (item.qty === 1) itemTotal = item.tier_1 || 0;
-                                else if (item.qty === 2) itemTotal = item.tier_2 || item.tier_1 || 0;
-                                else if (item.qty === 3) itemTotal = item.tier_3 || item.tier_2 || item.tier_1 || 0;
-                                else {
-                                    const baseThree = item.tier_3 || item.tier_2 || item.tier_1 || 0;
-                                    const extra = (item.qty - 3) * (item.tier_lebih || 0);
-                                    itemTotal = baseThree + extra;
-                                }
-                                singlePriceDisplay = itemTotal / item.qty;
-                            } else {
-                                singlePriceDisplay = item.price || item.harga || 0;
-                                itemTotal = singlePriceDisplay * item.qty;
-                            }
-
-                            return (
-                                <div key={item.id} className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl border border-white/10" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)' }}>
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs lg:text-sm font-bold text-gray-900 dark:text-white w-3/4 line-clamp-2">{item.name || item.nama}</span>
-                                        <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1">
-                                            <Trash2 size={14} />
-                                        </button>
+                        queueBookings.map(booking => (
+                            <div key={booking.id} className="bg-[#111] border border-white/10 p-4 rounded-xl flex flex-col gap-3 shadow-lg">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-black text-base uppercase tracking-tighter leading-none">{booking.nama}</p>
+                                        <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">{booking.paket}</p>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center bg-surface-900 rounded-lg shadow-sm border border-white/10">
-                                            <button onClick={() => updateQty(item.id, -1)} className="p-1.5 hover:bg-surface-700 text-gray-400 rounded-l-lg"><Minus size={12} /></button>
-                                            <span className="px-2 text-xs lg:text-sm font-bold w-6 text-center text-gray-900 dark:text-white">{item.qty}</span>
-                                            <button onClick={() => updateQty(item.id, 1)} className="p-1.5 hover:bg-surface-700 text-gray-400 rounded-r-lg"><Plus size={12} /></button>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-xs lg:text-sm text-gray-900 dark:text-white">{formatCurrency(itemTotal)}</div>
-                                            <div className="text-[9px] lg:text-[10px] text-gray-500">@{formatCurrency(singlePriceDisplay)} {item.tipe_harga === 'bertingkat' && 'avg'}</div>
-                                        </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-black text-[#800000]">{booking.jam}</p>
                                     </div>
                                 </div>
-                            );
-                        })
+                                <div className="flex justify-between items-center border-t border-white/5 pt-3">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${booking.tipe_bayar === 'PAID' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' : 'bg-orange-500/20 text-orange-500 border border-orange-500/30'}`}>
+                                        {booking.tipe_bayar === 'PAID' ? 'CEK LIVIN (QRIS)' : 'KEEP SLOT'}
+                                    </span>
+                                    <button
+                                        onClick={() => handleVerifyArrival(booking.id)}
+                                        className="bg-white text-black px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-gray-200 active:scale-95 transition-all flex items-center gap-1"
+                                    >
+                                        Verified <ArrowRight size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
+            </div>
 
-                {/* Bottom Checkout Section */}
-                <div className="p-3 bg-surface-900 border-t border-white/10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)]">
-                    <div className="mb-1 space-y-2">
-                        <div className="flex items-center gap-2 bg-surface-800 rounded-lg border border-white/10 px-3 py-2">
-                            <User size={16} className="text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Customer Name"
-                                className="bg-transparent flex-1 text-xs lg:text-sm outline-none text-gray-900 dark:text-white placeholder-gray-500 font-medium"
-                                value={customer.name}
-                                onChange={e => setCustomer({ ...customer, name: e.target.value })}
-                            />
-                        </div>
+            {/* ========================================== */}
+            {/* PANEL 2: IN-STUDIO (SEDANG SESI) - 25% */}
+            {/* ========================================== */}
+            <div className="w-1/4 h-full flex flex-col bg-[#111] border-r border-white/10 shrink-0 shadow-[-10px_0_20px_rgba(0,0,0,0.5)] z-10">
+                <div className="p-4 border-b border-white/10 bg-[#161616]">
+                    <h2 className="font-black text-sm uppercase tracking-widest text-white flex items-center gap-2"><Camera size={16} className="text-[#800000]" /> 2. IN-STUDIO</h2>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Sedang Foto / Pilih File</p>
+                </div>
 
-                        <div className="flex gap-1.5">
-                            {['Booking', 'OTS'].map(type => (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    {activeBookings.length === 0 ? (
+                        <p className="text-center text-gray-600 text-[10px] uppercase font-bold mt-10">Studio Kosong</p>
+                    ) : (
+                        activeBookings.map(booking => (
+                            <div key={booking.id} className="bg-[#1a1a1a] border border-[#800000]/30 p-4 rounded-xl flex flex-col gap-3 shadow-lg relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-1 h-full bg-[#800000]"></div>
+                                <div>
+                                    <p className="font-black text-base uppercase tracking-tighter leading-none text-white">{booking.nama}</p>
+                                    <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">{booking.paket} {booking.background ? `(${booking.background})` : ''}</p>
+                                </div>
                                 <button
-                                    key={type}
-                                    onClick={() => setCustomer({ ...customer, type })}
-                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${customer.type === type
-                                        ? 'bg-primary text-white border-primary shadow-sm'
-                                        : 'bg-surface-800 text-gray-400 border-white/10 hover:text-white'
-                                        }`}
+                                    disabled={selectedBookingForCheckout?.id === booking.id}
+                                    onClick={() => handleStartCheckout(booking)}
+                                    className="w-full bg-[#800000] text-white py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-900 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >
-                                    {type}
+                                    {selectedBookingForCheckout?.id === booking.id ? 'SEDANG CHECKOUT...' : 'Tarik ke Kasir (Checkout)'}
                                 </button>
-                            ))}
-                            {['QRIS', 'CASH'].map(method => (
-                                <button
-                                    key={method}
-                                    onClick={() => setCustomer({ ...customer, payment: method })}
-                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${customer.payment === method
-                                        ? method === 'QRIS'
-                                            ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                                            : 'border-green-500 bg-green-500/10 text-green-400'
-                                        : 'bg-surface-800 border-white/10 text-gray-400 hover:text-white'
-                                        }`}
-                                >
-                                    {method}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-between items-center text-lg lg:text-2xl font-black text-gray-900 dark:text-white px-2 py-2">
-                            <span>Total</span>
-                            <span>{formatCurrency(total)}</span>
-                        </div>
-
-                        <button
-                            onClick={handlePay}
-                            disabled={!canPay}
-                            className={`w-full py-3 lg:py-4 rounded-xl font-bold text-white text-sm lg:text-base shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95 ${canPay
-                                ? 'bg-primary hover:bg-primary-dark shadow-primary/20 cursor-pointer'
-                                : 'bg-surface-700 opacity-50 cursor-not-allowed'
-                                }`}
-                        >
-                            <CreditCard size={18} />
-                            {!customer.name.trim() ? 'Enter Customer' : !cart.length ? 'Add Items' : 'Pay Now'}
-                        </button>
-                    </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
-            {/* Receipt Preview Modal - Ditarik keluar dari hirarki panel agar Z-Index Mutlak */}
-            {showReceiptPreview && (
-                <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-lg text-gray-900">Receipt Preview</h3>
-                            <button onClick={() => setShowReceiptPreview(false)} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
-                                <X size={20} />
-                            </button>
-                        </div>
+            {/* ========================================== */}
+            {/* PANEL 3: CASHIER & UPSELL (KERANJANG) - 50% */}
+            {/* ========================================== */}
+            <div className="w-2/4 h-full flex flex-col bg-[#050505] shrink-0 shadow-[-20px_0_40px_rgba(0,0,0,0.8)] z-20 relative">
 
-                        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
-                            <div className="shadow-lg">
-                                <Receipt
-                                    ref={receiptRef}
-                                    cart={cart}
-                                    total={total}
-                                    subtotal={total}
-                                    paymentMethod={customer.payment}
-                                    customer={customer}
-                                />
+                {/* STATE 1: KOSONG (Kru belum narik nama dari Studio) */}
+                {!selectedBookingForCheckout ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                        <PackagePlus size={48} className="text-gray-800 mb-4" />
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Kasir Standby</h2>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest max-w-xs">Tarik nama dari antrean IN-STUDIO untuk memproses penambahan Add-On & Struk Pelunasan.</p>
+                    </div>
+                ) : (
+                    /* STATE 2: MODE CHECKOUT AKTIF (Terbelah jadi Katalog & Keranjang) */
+                    <div className="flex flex-1 overflow-hidden">
+
+                        {/* 3A. KATALOG ADD-ON FISIK (Print / Frame) */}
+                        <div className="w-1/2 flex flex-col border-r border-white/10 bg-[#0a0a0a]">
+                            <div className="p-4 border-b border-white/10 bg-[#111]">
+                                <h2 className="font-black text-xs uppercase tracking-widest text-white flex items-center gap-2">Menu OTS / Add-On</h2>
+                            </div>
+
+                            <div className="flex gap-2 overflow-x-auto p-3 scrollbar-hide border-b border-white/5 bg-[#050505]">
+                                {categories.map(cat => (
+                                    <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${selectedCategory === cat ? 'bg-white text-black border-white' : 'bg-[#111] text-gray-500 border-white/10 hover:text-white'}`}>
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-3 grid grid-cols-1 gap-2 content-start custom-scrollbar">
+                                {filteredProducts.map(product => {
+                                    let displayPrice = product.price || product.harga;
+                                    if (product.tipe_harga === 'bertingkat') displayPrice = product.tier_1;
+
+                                    return (
+                                        <button key={product.id} onClick={() => addToCart(product)} className="w-full p-4 rounded-xl transition-all border border-white/10 hover:border-[#800000] group flex items-center justify-between text-left bg-[#111] shadow-sm">
+                                            <div>
+                                                <h3 className="font-black text-white text-xs uppercase tracking-wider">{product.name || product.nama}</h3>
+                                                <div className="font-bold text-[#800000] text-[10px] mt-1">
+                                                    {formatCurrency(displayPrice)}
+                                                    {product.tipe_harga === 'bertingkat' && <span className="text-[8px] font-normal text-gray-500 ml-1">+tier</span>}
+                                                </div>
+                                            </div>
+                                            <div className="h-6 w-6 rounded-full bg-black border border-white/10 flex items-center justify-center text-gray-500 group-hover:bg-[#800000] group-hover:text-white group-hover:border-[#800000] transition-colors shrink-0">
+                                                <Plus size={12} />
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        <div className="p-4 border-t bg-white flex flex-col sm:flex-row gap-3">
-                            <button
-                                onClick={() => setShowReceiptPreview(false)}
-                                className="flex-1 py-3 rounded-xl font-bold text-gray-400 border border-white/10 hover:bg-surface-800 hover:text-gray-900 transition-all"
-                            >
-                                Cancel
+                        {/* 3B. KERANJANG FINAL & PEMBAYARAN */}
+                        <div className="w-1/2 flex flex-col bg-[#111] relative">
+                            {/* Header Keranjang Aktif */}
+                            <div className="p-4 border-b border-white/10 bg-[#1a1a1a] flex justify-between items-center">
+                                <div>
+                                    <h2 className="font-black text-xs uppercase tracking-widest text-white">Active Checkout</h2>
+                                    <p className="text-[9px] font-black text-blue-400 mt-1 uppercase tracking-widest">
+                                        Pelanggan: {customer.name}
+                                    </p>
+                                </div>
+                                <button onClick={handleCancelCheckout} className="p-1.5 bg-red-900/20 text-red-500 hover:bg-red-900 hover:text-white rounded-lg transition-colors" title="Batal Checkout">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {/* List Item Keranjang */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                                {cart.map(item => {
+                                    let itemTotal = 0; let singlePriceDisplay = 0;
+                                    if (item.tipe_harga === 'bertingkat') {
+                                        if (item.qty === 1) itemTotal = item.tier_1 || 0;
+                                        else if (item.qty === 2) itemTotal = item.tier_2 || item.tier_1 || 0;
+                                        else if (item.qty === 3) itemTotal = item.tier_3 || item.tier_2 || item.tier_1 || 0;
+                                        else itemTotal = (item.tier_3 || item.tier_2 || item.tier_1 || 0) + ((item.qty - 3) * (item.tier_lebih || 0));
+                                        singlePriceDisplay = itemTotal / item.qty;
+                                    } else {
+                                        singlePriceDisplay = item.price || item.harga || 0;
+                                        itemTotal = singlePriceDisplay * item.qty;
+                                    }
+
+                                    const isWebBase = item.name?.includes('[WEB]');
+
+                                    return (
+                                        <div key={item.id} className={`flex flex-col gap-2 p-3 rounded-xl border ${isWebBase ? 'border-blue-900/50 bg-blue-900/10' : 'border-white/10 bg-[#0a0a0a]'}`}>
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-[10px] font-black text-white uppercase tracking-wider leading-tight">
+                                                    {item.name || item.nama}
+                                                    {isWebBase && <span className="ml-2 bg-blue-500 text-black text-[7px] px-1.5 py-0.5 rounded-full uppercase font-black">Base Web</span>}
+                                                </span>
+                                                {!isWebBase && (
+                                                    <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1">
+                                                {!isWebBase ? (
+                                                    <div className="flex items-center bg-black rounded-lg border border-white/10">
+                                                        <button onClick={() => updateQty(item.id, -1)} className="p-1.5 text-gray-400 hover:text-white"><Minus size={10} /></button>
+                                                        <span className="w-5 text-center text-[10px] font-black text-white">{item.qty}</span>
+                                                        <button onClick={() => updateQty(item.id, 1)} className="p-1.5 text-gray-400 hover:text-white"><Plus size={10} /></button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Fixed Item</div>
+                                                )}
+                                                <div className="text-right">
+                                                    <div className="font-black text-xs text-white">{formatCurrency(itemTotal)}</div>
+                                                    {!isWebBase && <div className="text-[8px] text-gray-500">@{formatCurrency(singlePriceDisplay)}</div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Area Tagihan Final */}
+                            <div className="p-4 bg-[#0a0a0a] border-t border-white/10">
+                                <div className="flex gap-2 mb-4">
+                                    <button onClick={() => setCustomer({ ...customer, payment: 'QRIS' })} className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${customer.payment === 'QRIS' ? 'border-[#00A86B] bg-[#00A86B]/20 text-[#00A86B]' : 'bg-[#111] border-white/5 text-gray-500 hover:text-white'}`}>QRIS / Transfer</button>
+                                    <button onClick={() => setCustomer({ ...customer, payment: 'CASH' })} className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${customer.payment === 'CASH' ? 'border-green-500 bg-green-500/20 text-green-400' : 'bg-[#111] border-white/5 text-gray-500 hover:text-white'}`}>CASH (Tunai)</button>
+                                </div>
+
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tagihan Akhir</span>
+                                    <span className="text-2xl font-black text-white">{formatCurrency(total)}</span>
+                                </div>
+
+                                <button onClick={() => setShowReceiptPreview(true)} disabled={!canPay} className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2 ${canPay ? 'bg-white text-black hover:bg-gray-200 active:scale-95' : 'bg-surface-800 text-gray-600 border border-white/5 cursor-not-allowed'}`}>
+                                    <CreditCard size={16} /> Konfirmasi Lunas & Cetak Struk
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ========================================== */}
+            {/* RECEIPT PREVIEW MODAL (OVERLAY MUTLAK)     */}
+            {/* ========================================== */}
+            {showReceiptPreview && (
+                <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#111] border border-white/10 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#1a1a1a]">
+                            <h3 className="font-black text-sm text-white uppercase tracking-widest">Preview Struk</h3>
+                            <button onClick={() => setShowReceiptPreview(false)} className="p-1.5 bg-surface-800 hover:bg-white/20 rounded-full text-gray-400 transition-colors"><X size={16} /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 bg-[#050505] flex justify-center">
+                            <div className="shadow-2xl shadow-black">
+                                <Receipt ref={receiptRef} cart={cart} total={total} subtotal={total} paymentMethod={customer.payment} customer={customer} />
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-[#1a1a1a] border-t border-white/10 flex flex-col sm:flex-row gap-2">
+                            <button onClick={() => setShowReceiptPreview(false)} className="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-400 bg-surface-800 hover:bg-surface-700 hover:text-white transition-all">
+                                Batal
                             </button>
                             <div className="flex flex-1 gap-2">
-                                <button
-                                    onClick={handleShareReceipt}
-                                    className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2 shadow-lg"
-                                    title="Share or Download Image (Mobile Friendly)"
-                                >
-                                    Share
+                                <button onClick={handleShareReceipt} className="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-black bg-white hover:bg-gray-200 shadow-lg transition-all" title="Download Image untuk dikirim ke IG DM">
+                                    Simpan JPG
                                 </button>
-                                <button
-                                    onClick={handleConfirmAndPay}
-                                    className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                                    title="Browser Print Dialog"
-                                >
-                                    <Printer size={18} />
-                                    Print
+                                <button onClick={handleConfirmAndPay} className="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-white bg-[#800000] hover:bg-red-900 flex items-center justify-center gap-1 shadow-lg transition-all" title="Print Fisik">
+                                    <Printer size={14} /> Print
                                 </button>
                             </div>
                         </div>

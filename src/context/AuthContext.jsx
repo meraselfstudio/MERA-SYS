@@ -8,9 +8,17 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         const initializeAuth = async () => {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Auth initialization timeout")), 5000)
+            );
+
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                const { data: { session }, error } = await Promise.race([
+                    supabase.auth.getSession(),
+                    timeoutPromise
+                ]);
 
                 if (error) throw error; // Catch Supabase API errors
 
@@ -46,32 +54,42 @@ export const AuthProvider = ({ children }) => {
                     setIsAuthenticated(true);
                 }
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         initializeAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+        let subscription;
+        try {
+            const result = supabase.auth.onAuthStateChange(async (event, session) => {
+                if (!isMounted) return;
+                if (event === 'SIGNED_IN' && session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
 
-                const mergedUser = { ...session.user, ...profile };
-                setUser(mergedUser);
-                setIsAuthenticated(true);
-                localStorage.setItem('mera_user', JSON.stringify(mergedUser));
-            } else if (event === 'SIGNED_OUT') {
-                setUser(null);
-                setIsAuthenticated(false);
-                localStorage.removeItem('mera_user');
-            }
-        });
+                    const mergedUser = { ...session.user, ...profile };
+                    setUser(mergedUser);
+                    setIsAuthenticated(true);
+                    localStorage.setItem('mera_user', JSON.stringify(mergedUser));
+                } else if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    localStorage.removeItem('mera_user');
+                }
+            });
+            subscription = result.data.subscription;
+        } catch (err) {
+            console.error("Auth subscription failed:", err);
+        }
 
-        return () => subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            if (subscription) subscription.unsubscribe();
+        };
     }, []);
 
     const login = async (email, password) => {
@@ -107,9 +125,20 @@ export const AuthProvider = ({ children }) => {
         isLoading
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-black">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400 font-bold">Initializing Méra OS...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <AuthContext.Provider value={value}>
-            {!isLoading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

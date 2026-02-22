@@ -6,6 +6,7 @@ import POS from './pages/POS';
 import Absensi from './pages/Absensi';
 import Finance from './pages/Finance';
 import Settings from './pages/Settings';
+import PublicBooking from './pages/PublicBooking';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LockScreen from './components/Auth/LockScreen';
@@ -66,6 +67,7 @@ const AppRoutes = () => {
 
                 {/* Shared/Public Routes within App */}
                 <Route path="/absensi" element={<Absensi />} />
+                <Route path="/booking" element={<PublicBooking />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </MainLayout>
@@ -74,15 +76,17 @@ const AppRoutes = () => {
 
 function App() {
     return (
-        <AuthProvider>
-            <FinanceProvider>
-                <ThemeProvider>
-                    <Router>
-                        <AppRoutes />
-                    </Router>
-                </ThemeProvider>
-            </FinanceProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <FinanceProvider>
+                    <ThemeProvider>
+                        <Router>
+                            <AppRoutes />
+                        </Router>
+                    </ThemeProvider>
+                </FinanceProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 

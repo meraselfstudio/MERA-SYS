@@ -11,6 +11,8 @@ const STATUS_STYLES = {
     KEEPSLOT: 'bg-yellow-900/20 text-yellow-400 border border-yellow-900/50',
     COMPLETED: 'bg-blue-900/20 text-blue-400 border border-blue-900/50',
     PENDING: 'bg-gray-900/20 text-gray-400 border border-white/10',
+    ARRIVED: 'bg-purple-900/20 text-purple-400 border border-purple-900/50',
+    AWAITING_CONFIRMATION: 'bg-orange-900/20 text-orange-400 border border-orange-900/50',
 };
 
 const GlassCard = ({ children, className = '' }) => (
@@ -89,7 +91,7 @@ const NewBookingModal = ({ onClose, onSave }) => {
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Status</label>
                             <select value={form.status} onChange={set('status')} className={inp}>
-                                {['KEEPSLOT', 'PAID', 'COMPLETED', 'PENDING'].map(s => <option key={s} value={s}>{s}</option>)}
+                                {['KEEPSLOT', 'AWAITING_CONFIRMATION', 'PAID', 'ARRIVED', 'COMPLETED', 'PENDING'].map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
                         <div>
@@ -169,7 +171,7 @@ const EditBookingModal = ({ booking, onClose, onSave }) => {
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Status</label>
                             <select value={form.status} onChange={set('status')} className={inp}>
-                                {['KEEPSLOT', 'PAID', 'COMPLETED', 'PENDING'].map(s => <option key={s} value={s}>{s}</option>)}
+                                {['KEEPSLOT', 'AWAITING_CONFIRMATION', 'PAID', 'ARRIVED', 'COMPLETED', 'PENDING'].map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
                         <div>

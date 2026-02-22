@@ -76,6 +76,24 @@ const POSModule = () => {
     // 2. LOGIKA OPERASIONAL (VERIFIKASI -> SESI -> CHECKOUT)
     // ==========================================
 
+    const simulateCustomer = async () => {
+        const mock = {
+            nama: 'Customer Test ' + Math.floor(Math.random() * 1000),
+            paket: 'Self Photo Session',
+            total_tagihan: 50000,
+            tanggal: new Date().toLocaleDateString('en-CA'),
+            jam: '10:00',
+            tipe_bayar: 'KEEPSLOT',
+            status: 'AWAITING_CONFIRMATION'
+        };
+        try {
+            await supabase.from('bookings').insert([mock]);
+            fetchTodaySchedule();
+        } catch (e) {
+            console.error("Gagal simulasi:", e);
+        }
+    };
+
     // A. KRU MEMVERIFIKASI KEDATANGAN (Pindah dari Lobby ke Studio)
     const handleVerifyArrival = async (id) => {
         try {
@@ -230,9 +248,14 @@ const POSModule = () => {
                         <h2 className="font-black text-sm uppercase tracking-widest text-white flex items-center gap-2"><User size={16} className="text-[#800000]" /> 1. LOBBY</h2>
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Antrean Belum Verifikasi</p>
                     </div>
-                    <button onClick={fetchTodaySchedule} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Refresh Data">
-                        <RefreshCw size={14} className={`text-gray-400 ${loadingBookings ? 'animate-spin' : ''}`} />
-                    </button>
+                    <div className="flex gap-1 items-center">
+                        <button onClick={simulateCustomer} className="p-2 hover:bg-white/10 flex items-center gap-1 rounded-lg text-blue-400 font-bold text-[9px] uppercase tracking-widest transition-colors" title="Simulasi Customer Baru">
+                            <Plus size={12} /> Test
+                        </button>
+                        <button onClick={fetchTodaySchedule} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Refresh Data">
+                            <RefreshCw size={14} className={`text-gray-400 ${loadingBookings ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">

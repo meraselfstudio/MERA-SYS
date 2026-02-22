@@ -22,16 +22,28 @@ const GlassCard = ({ children, className = '' }) => (
 );
 
 /* ── NEW BOOKING MODAL ──────────────────────────── */
-const PACKAGES = [
-    'Self Photo Session', 'Party Photo Session', 'Thematic Basic',
-    'Thematic Package', 'Wide Photo', 'Custom Session'
-];
+const TIME_SLOTS = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
+const FALLBACK_PACKAGES = ['Self Photo Session', 'Party Photo Session', 'Thematic Basic', 'Thematic Package', 'Wide Photo', 'Custom Session'];
 
-const NewBookingModal = ({ onClose, onSave }) => {
+const NewBookingModal = ({ onClose, onSave, bookings, products }) => {
     const today = new Date().toISOString().slice(0, 10);
-    const [form, setForm] = useState({ name: '', phone: '', price: '', date: today, time: '', package: PACKAGES[0], status: 'KEEPSLOT', pmt: 'PENDING', notes: '' });
-    const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+    const availableProducts = products || [];
+    const prodNames = availableProducts.length ? availableProducts.map(p => p.name || p.nama) : FALLBACK_PACKAGES;
+    const [form, setForm] = useState({ name: '', phone: '', price: '', date: today, time: '', package: prodNames[0], status: 'KEEPSLOT', pmt: 'PENDING', notes: '' });
     const inp = "w-full bg-black/40 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-primary placeholder-gray-700";
+
+    const set = k => e => {
+        const val = e.target.value;
+        if (k === 'package') {
+            const prod = availableProducts.find(p => (p.name || p.nama) === val);
+            setForm(f => ({ ...f, package: val, price: prod ? (prod.price || prod.harga || 0) : f.price }));
+        } else {
+            setForm(f => ({ ...f, [k]: val }));
+        }
+    };
+
+    const bookedSlots = bookings.filter(b => b.date === form.date && b.status !== 'CANCELLED').map(b => b.time);
+    const availableSlots = TIME_SLOTS.filter(t => !bookedSlots.includes(t));
 
     const submit = e => {
         e.preventDefault();
@@ -67,14 +79,17 @@ const NewBookingModal = ({ onClose, onSave }) => {
                         </div>
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Jam</label>
-                            <input required type="time" value={form.time} onChange={set('time')} className={inp} />
+                            <select required value={form.time} onChange={set('time')} className={inp}>
+                                <option value="" disabled>Pilih Jam</option>
+                                {availableSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Paket</label>
                             <select value={form.package} onChange={set('package')} className={inp}>
-                                {PACKAGES.map(p => <option key={p} value={p}>{p}</option>)}
+                                {prodNames.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
                         <div>
@@ -111,10 +126,24 @@ const NewBookingModal = ({ onClose, onSave }) => {
 };
 
 /* ── EDIT BOOKING MODAL ─────────────────────────── */
-const EditBookingModal = ({ booking, onClose, onSave }) => {
+const EditBookingModal = ({ booking, onClose, onSave, bookings, products }) => {
+    const availableProducts = products || [];
+    const prodNames = availableProducts.length ? availableProducts.map(p => p.name || p.nama) : FALLBACK_PACKAGES;
     const [form, setForm] = useState({ ...booking });
-    const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
     const inp = "w-full bg-black/40 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-primary placeholder-gray-700";
+
+    const set = k => e => {
+        const val = e.target.value;
+        if (k === 'package') {
+            const prod = availableProducts.find(p => (p.name || p.nama) === val);
+            setForm(f => ({ ...f, package: val, price: prod ? (prod.price || prod.harga || 0) : f.price }));
+        } else {
+            setForm(f => ({ ...f, [k]: val }));
+        }
+    };
+
+    const bookedSlots = bookings.filter(b => b.date === form.date && b.id !== form.id && b.status !== 'CANCELLED').map(b => b.time);
+    const availableSlots = TIME_SLOTS.filter(t => !bookedSlots.includes(t));
 
     const submit = e => {
         e.preventDefault();
@@ -132,12 +161,8 @@ const EditBookingModal = ({ booking, onClose, onSave }) => {
                 <form onSubmit={submit} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Nama Customer</label>
+                            <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Customer</label>
                             <input required placeholder="Nama..." value={form.name} onChange={set('name')} className={inp} />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">No. HP / WA</label>
-                            <input placeholder="08..." value={form.phone || ''} onChange={set('phone')} className={inp} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -147,14 +172,18 @@ const EditBookingModal = ({ booking, onClose, onSave }) => {
                         </div>
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Jam</label>
-                            <input required type="time" value={form.time} onChange={set('time')} className={inp} />
+                            <select required value={form.time} onChange={set('time')} className={inp}>
+                                <option value="" disabled>Pilih Jam</option>
+                                {availableSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                                {form.time && !availableSlots.includes(form.time) && <option value={form.time}>{form.time} (Current)</option>}
+                            </select>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Paket</label>
                             <select value={form.package} onChange={set('package')} className={inp}>
-                                {PACKAGES.map(p => <option key={p} value={p}>{p}</option>)}
+                                {prodNames.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
                         <div>
@@ -192,7 +221,7 @@ const EditBookingModal = ({ booking, onClose, onSave }) => {
 
 /* ── BOOKINGS TAB ───────────────────────────────── */
 const BookingsTab = () => {
-    const { bookings, addBooking, updateBooking, deleteBooking } = useFinance();
+    const { bookings, products, addBooking, updateBooking, deleteBooking } = useFinance();
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
@@ -351,8 +380,8 @@ const BookingsTab = () => {
                     )}
                 </div>
             </GlassCard>
-            {showNewModal && <NewBookingModal onClose={() => setShowNewModal(false)} onSave={addBooking} />}
-            {editingBooking && <EditBookingModal booking={editingBooking} onClose={() => setEditingBooking(null)} onSave={updateBooking} />}
+            {showNewModal && <NewBookingModal onClose={() => setShowNewModal(false)} onSave={addBooking} bookings={bookings} products={products} />}
+            {editingBooking && <EditBookingModal booking={editingBooking} onClose={() => setEditingBooking(null)} onSave={updateBooking} bookings={bookings} products={products} />}
         </>
     );
 };

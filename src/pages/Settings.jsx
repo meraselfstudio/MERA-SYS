@@ -56,7 +56,7 @@ const fmt = n => `Rp ${Number(n || 0).toLocaleString('id-ID')}`;
 
 
 /* ─ Modal Past Data removed (moved to Finance via plan) ─ */
-/* ── Owner Tools Section ─────────────────────────── */
+/* ── Reset Tools Section ─────────────────────────── */
 const SHIFT_OPTS = [
     { value: 'weekday_full', label: 'Weekday Full Time (Senin–Kamis)' },
     { value: 'weekend_shift1', label: 'Weekend Shift 1 / 09–15 (Jumat–Minggu)' },
@@ -125,10 +125,10 @@ const OwnerToolsSection = () => {
 
     return (
         <>
-            <Section title="Owner Tools" icon={Lock} accent="text-amber-400">
+            <Section title="Reset Tools" icon={Lock} accent="text-amber-400">
                 {/* Sub-tabs */}
                 <div className="px-6 pt-4 pb-2 flex gap-2">
-                    {[['data', '📊 Data'], ['produk', '🛒 Produk']].map(([k, l]) => (
+                    {[['data', '📊 Data'], ['produk', '🛒 Products']].map(([k, l]) => (
                         <button key={k} onClick={() => setOwnerTab(k)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${ownerTab === k ? 'bg-primary text-white border-primary' : 'bg-white/4 text-gray-400 border-white/8 hover:text-white'}`}>
                             {l}
@@ -139,7 +139,7 @@ const OwnerToolsSection = () => {
 
                 {/* TAB: DATA */}
                 {ownerTab === 'data' && (<>
-                    <Row title="Reset 1 Bulan Data" description="⚠️ Hapus transaksi dan booking untuk bulan tertentu" danger>
+                    <Row title="Reset Monthly" description="Hapus transaksi dan booking untuk bulan tertentu" danger>
                         <div className="flex items-center gap-2">
                             <select className="bg-black/40 border border-white/10 text-white rounded-lg px-2 py-1 text-xs" value={resetMo} onChange={e => setResetMo(Number(e.target.value))}>
                                 {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
@@ -152,7 +152,7 @@ const OwnerToolsSection = () => {
                             </button>
                         </div>
                     </Row>
-                    <Row title="Reset Semua Data" description="⚠️ Hapus semua rekap, booking & checklist"
+                    <Row title="TOTAL RESET" description="⚠️  HAPUS SEMUA DATA  ⚠️"
                         onClick={() => {
                             if (window.confirm('Reset SEMUA data aplikasi?\n\n• Semua transaksi Finance\n• Semua data Booking\n• Checklist & progress\n\nTidak bisa dibatalkan!')) {
                                 resetAll(); logout();
@@ -279,7 +279,7 @@ const Settings = () => {
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Settings</h1>
-                        <p className="text-sm text-gray-500">System preferences & crew tools</p>
+                        <p className="text-sm text-gray-500"></p>
                     </div>
                 </div>
 
@@ -301,48 +301,13 @@ const Settings = () => {
                         ))
                     )}
                 </Section>
-
-                {/* HARDWARE */}
-                <Section title="Hardware & Printing" icon={Printer} accent="text-orange-400">
-                    <div className="px-6 py-8 text-center">
-                        <Printer size={32} className="text-orange-400/50 mx-auto mb-3" />
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-1">MacOS Exclusive Feature</h4>
-                        <p className="text-xs text-gray-500">Hardware & Thermal Printing settings are available exclusively on the Mera OS macOS companion app.</p>
-                    </div>
-                </Section>
-
-                {/* INTERFACE */}
-                <Section title="Interface" icon={Monitor} accent="text-purple-400">
-                    <Row title="Sound Effects" description="Suara untuk aksi di kasir & notifikasi">
-                        <Toggle active={soundFX} onToggle={() => setSoundFX(p => !p)} />
-                    </Row>
-                    <Row title="Tema Tampilan" description={`Aktif: ${theme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}`}
-                        onClick={toggleTheme} chevron>
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                            {theme === 'dark' ? <Moon size={13} /> : <Sun size={13} />}
-                            {theme === 'dark' ? 'Dark' : 'Light'}
-                        </div>
-                    </Row>
-                    <Row title="Versi Aplikasi"><Badge color="gray">v1.3.0 · Build 3031</Badge></Row>
-                </Section>
-
                 {/* OWNER TOOLS */}
                 <OwnerToolsSection />
 
                 {/* SYSTEM */}
                 <Section title="System" icon={HardDrive} accent="text-gray-400">
-                    <Row title="Hapus Cache Lokal" description="Reset data produk · akan reload dari CSV"
-                        onClick={() => { if (window.confirm('Hapus cache dan reload?')) { localStorage.clear(); window.location.reload(); } }}
-                        chevron danger>
-                        <Trash2 size={15} className="text-red-600" />
-                    </Row>
-                    <Row title="Mera OS"><span className="text-xs text-gray-600">© 2026 Mera Selfstudios</span></Row>
+                    <Row title="Mera OS"><span className="text-xs text-gray-600">© 2026 Mera Selfstudio Operating System</span></Row>
                 </Section>
-
-                <div className="rounded-2xl p-5 border border-dashed border-white/8 text-center">
-                    <Zap size={18} className="text-primary/40 mx-auto mb-2" />
-                    <p className="text-sm font-bold text-gray-600">Booking & Photobooth integration coming soon</p>
-                </div>
             </div>
         </>
     );

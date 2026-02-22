@@ -106,7 +106,7 @@ const AbsensiPage = () => {
             {/* Ambient glow */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10"
-                    style={{ background: 'radial-gradient(circle, #ef4444 0%, transparent 70%)' }} />
+                    style={{ background: 'radial-gradient(circle, #000000ff 0%, transparent 70%)' }} />
             </div>
 
             {/* Top bar */}
@@ -115,20 +115,17 @@ const AbsensiPage = () => {
                     className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-400 transition-colors">
                     <ArrowLeft size={14} /> Dashboard
                 </button>
-                <div className="text-xs text-gray-700 font-mono uppercase tracking-widest">MERA OS · INTERN LOGIN</div>
+                <div className="text-xs text-gray-700 uppercase tracking-widest">MERA OS · INTERN LOGIN</div>
             </div>
 
             <div className="z-10 w-full max-w-md flex flex-col items-center gap-8">
 
-                {/* Clock */}
-                <LiveClock />
-
                 {/* Screen: SELECT */}
                 {step === 'select' && (
                     <div className="w-full space-y-3">
-                        <p className="text-center text-xs text-gray-600 uppercase tracking-widest font-bold mb-4">Pilih Identitas</p>
+                        <p className="text-center text-xs text-gray-600 uppercase tracking-widest font-bold mb-4">Select Your Identity</p>
                         {interns.length === 0 && (
-                            <p className="text-center text-gray-700 text-sm">Belum ada intern terdaftar</p>
+                            <p className="text-center text-gray-700 text-sm">No interns registered yet</p>
                         )}
                         {interns.map(intern => {
                             const active = hasClockedIn(intern.id);
@@ -136,8 +133,8 @@ const AbsensiPage = () => {
                             return (
                                 <button key={intern.id} onClick={() => selectIntern(intern)}
                                     className={`w-full flex items-center px-5 py-4 rounded-2xl border transition-all group ${active
-                                            ? 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
-                                            : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/15'
+                                        ? 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
+                                        : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/15'
                                         }`}>
                                     {/* Avatar */}
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${active ? 'bg-green-500/20 text-green-400' : 'bg-white/8 text-gray-400'
@@ -151,11 +148,11 @@ const AbsensiPage = () => {
                                         </p>
                                     </div>
                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${active
-                                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                                            : 'bg-green-500/10 border-green-500/20 text-green-400'
+                                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                        : 'bg-green-500/10 border-green-500/20 text-green-400'
                                         }`}>
                                         {active ? <LogOut size={12} /> : <LogIn size={12} />}
-                                        {active ? 'Clock Out' : 'Clock In'}
+                                        {active ? 'Log Out' : 'Log In'}
                                     </div>
                                 </button>
                             );
@@ -168,36 +165,36 @@ const AbsensiPage = () => {
                     <div className="w-full flex flex-col items-center gap-6">
                         {/* Big avatar */}
                         <div className={`w-28 h-28 rounded-full flex items-center justify-center text-5xl font-black border-4 ${action === 'in'
-                                ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                                : 'bg-red-500/10 border-red-500/30 text-red-300'
+                            ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                            : 'bg-red-500/10 border-red-500/30 text-red-300'
                             }`}>
                             {selectedIntern.name.charAt(0)}
                         </div>
 
                         <div className="text-center">
                             <p className="text-2xl font-black text-gray-900 dark:text-white">{selectedIntern.name}</p>
-                            <p className="text-sm text-gray-500 mt-1">Intern · {action === 'in' ? 'Clock In sekarang?' : 'Clock Out sekarang?'}</p>
+                            <p className="text-sm text-gray-500 mt-1">Intern · {action === 'in' ? 'Log In now?' : 'Log Out now?'}</p>
                         </div>
 
                         <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold ${action === 'in'
-                                ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                            ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                            : 'bg-red-500/10 border-red-500/20 text-red-400'
                             }`}>
                             <Clock size={14} />
-                            {action === 'in' ? 'CLOCK IN' : 'CLOCK OUT'}
+                            {action === 'in' ? 'LOG IN' : 'LOG OUT'}
                         </div>
 
                         <div className="flex gap-4 w-full max-w-xs">
                             <button onClick={reset}
                                 className="flex-1 py-3.5 rounded-2xl border border-white/10 bg-white/5 text-gray-400 font-bold hover:bg-white/8 transition-all">
-                                Batal
+                                Cancel
                             </button>
                             <button onClick={confirm}
                                 className={`flex-1 py-3.5 rounded-2xl font-bold text-white transition-all shadow-lg ${action === 'in'
-                                        ? 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
-                                        : 'bg-red-600 hover:bg-red-500 shadow-red-900/30'
+                                    ? 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
+                                    : 'bg-red-600 hover:bg-red-500 shadow-red-900/30'
                                     }`}>
-                                {action === 'in' ? 'Check In ✓' : 'Check Out ✓'}
+                                {action === 'in' ? 'Log In ✓' : 'Log Out ✓'}
                             </button>
                         </div>
                     </div>
@@ -213,18 +210,18 @@ const AbsensiPage = () => {
 
                         <div className="text-center">
                             <p className="text-2xl font-black text-gray-900 dark:text-white">
-                                {result.action === 'in' ? 'Selamat Datang!' : 'Sampai Jumpa!'}
+                                {result.action === 'in' ? 'Welcome!' : 'See you later!'}
                             </p>
                             <p className="text-lg text-gray-400 mt-1 font-bold">{result.name}</p>
                             <div className="flex items-center justify-center gap-2 mt-3 text-sm text-gray-600">
                                 <Clock size={14} />
-                                <span>{result.action === 'in' ? 'Check-in' : 'Check-out'} pada <span className="text-gray-900 dark:text-white font-mono font-bold">{result.time}</span></span>
+                                <span>{result.action === 'in' ? 'Log In' : 'Log Out'} at  <span className="text-gray-900 dark:text-white font-bold">{result.time}</span></span>
                             </div>
                         </div>
 
                         <button onClick={reset}
                             className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-primary hover:bg-red-700 text-white font-bold shadow-lg shadow-primary/20 transition-all">
-                            Selesai <ChevronRight size={16} />
+                            Done <ChevronRight size={16} />
                         </button>
                     </div>
                 )}
@@ -232,7 +229,7 @@ const AbsensiPage = () => {
                 {/* Today's log strip */}
                 {sessions.filter(s => s.date === todayStr).length > 0 && step === 'select' && (
                     <div className="w-full">
-                        <p className="text-[10px] text-gray-700 uppercase tracking-widest mb-2 text-center">Log Hari Ini</p>
+                        <p className="text-[10px] text-gray-700 uppercase tracking-widest mb-2 text-center">Today's Log</p>
                         <div className="space-y-1.5">
                             {sessions.filter(s => s.date === todayStr).map(s => (
                                 <div key={s.id} className="flex items-center px-4 py-2.5 rounded-xl border border-white/6 bg-white/2 text-xs">

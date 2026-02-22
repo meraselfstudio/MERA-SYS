@@ -37,9 +37,9 @@ const Sidebar = ({ isOpen, onClose }) => {
             <aside
                 className={clsx(
                     "hidden md:flex inset-y-0 left-0 z-50 transition-all duration-300 flex-col backdrop-blur-md",
-                    "bg-surface-950/95 border-r border-white/5",
+                    "bg-[#050505] border-r border-white/5",
                     "relative translate-x-0",
-                    collapsed ? "w-24" : "w-80"
+                    collapsed ? "w-20" : "w-80"
                 )}
             >
                 {/* Header / Logo */}
@@ -59,15 +59,22 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 "flex items-center px-4 py-3 rounded-xl transition-all duration-300 group border relative overflow-hidden",
                                 "font-bold tracking-wide text-sm uppercase",
                                 isActive
-                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-[1.02]"
-                                    : "bg-transparent text-gray-400 border-transparent hover:border-white/10 hover:text-white hover:bg-white/5",
-                                collapsed ? "justify-center" : "gap-4"
+                                    ? "bg-[#111] text-primary border-[#800000]/50 shadow-lg shadow-primary/10 scale-[1.02]"
+                                    : "bg-transparent text-gray-500 border-transparent hover:border-white/10 hover:text-white hover:bg-[#0a0a0a]",
+                                collapsed ? "justify-center p-3" : "gap-4 px-4 py-3"
                             )}
                         >
+                            {/* Icon always visible */}
+                            <div className={clsx("transition-transform duration-300", collapsed && isActive ? "scale-110" : "")}>
+                                {item.icon}
+                            </div>
 
-                            <span className={clsx("truncate relative z-10 transition-all duration-300", collapsed ? "text-lg font-black" : "text-sm")}>
-                                {collapsed ? item.label.charAt(0) : item.label}
-                            </span>
+                            {/* Label only visible when expanded */}
+                            {!collapsed && (
+                                <span className="truncate relative z-10 transition-all duration-300 text-sm">
+                                    {item.label}
+                                </span>
+                            )}
 
                             {/* Playful Hover Effect Background */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer z-0 pointer-events-none" />
@@ -76,44 +83,35 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </nav>
 
                 {/* User Profile / Footer */}
-                <div className="p-6 border-t border-red-950/30 bg-surface-950 relative group/footer">
+                <div className="p-4 border-t border-white/10 bg-[#0a0a0a] relative group/footer mt-auto shrink-0">
 
                     {/* Collapse Toggle */}
-                    {!collapsed && (
-                        <button
-                            onClick={() => setCollapsed(!collapsed)}
-                            className="absolute -top-3 left-6 p-1 rounded-full border border-white/20 bg-white/10 text-gray-900 dark:text-white hover:bg-white hover:text-red-900 transition-all shadow-lg backdrop-blur-sm z-20"
-                            title="Collapse"
-                        >
-                            <ChevronLeft size={14} />
-                        </button>
-                    )}
-                    {collapsed && (
-                        <button
-                            onClick={() => setCollapsed(!collapsed)}
-                            className="absolute -top-3 left-1/2 -translate-x-1/2 p-1 rounded-full border border-white/20 bg-white/10 text-gray-900 dark:text-white hover:bg-white hover:text-red-900 transition-all shadow-lg backdrop-blur-sm z-20"
-                            title="Expand"
-                        >
-                            <ChevronRight size={14} />
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="absolute -top-3 left-1/2 -translate-x-1/2 p-1 rounded-full border border-white/10 bg-[#111] text-gray-400 hover:text-white hover:bg-[#800000] transition-all shadow-xl z-20"
+                        title={collapsed ? "Expand" : "Collapse"}
+                    >
+                        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                    </button>
 
-                    <div className={clsx("flex items-center transition-all duration-300", collapsed ? "justify-center flex-col gap-4" : "justify-between gap-3")}>
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-orange-500 p-[2px] shadow-lg shadow-primary/20 shrink-0">
-                                <div className="w-full h-full rounded-full bg-surface-900 flex items-center justify-center text-gray-900 dark:text-white font-black text-xs uppercase">
-                                    {user?.name?.substring(0, 2) || 'GS'} {/* Initials */}
+                    <div className={clsx("flex items-center transition-all duration-300", collapsed ? "justify-center pt-2 pb-2" : "justify-between gap-3 p-2")}>
+                        {/* Avatar */}
+                        {!collapsed && (
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="w-10 h-10 rounded-full bg-[#800000] p-[2px] shadow-lg shrink-0">
+                                    <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center text-white font-black text-xs uppercase">
+                                        {user?.name?.substring(0, 2) || 'GS'} {/* Initials */}
+                                    </div>
+                                </div>
+                                <div className="min-w-0 transition-opacity duration-300">
+                                    <p className="text-base font-black text-white truncate transition-colors">{user?.name || 'Guest'}</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-[#800000] font-black truncate">{user?.role || 'Visitor'}</p>
                                 </div>
                             </div>
-                            {!collapsed && (
-                                <div className="min-w-0 transition-opacity duration-300">
-                                    <p className="text-base font-black text-gray-900 dark:text-white truncate group-hover/footer:text-primary transition-colors">{user?.name || 'Guest'}</p>
-                                    <p className="text-xs text-gray-500 truncate">{user?.role || 'Visitor'}</p>
-                                </div>
-                            )}
-                        </div>
+                        )}
 
-                        {!collapsed && (
+                        {/* Expand/Collapse specific view for logout */}
+                        {!collapsed ? (
                             <button
                                 onClick={() => setShowShiftSummary(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-red-600 border border-white/8 hover:border-red-600 transition-all duration-200 group/logout"
@@ -122,13 +120,21 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 <LogOut size={16} className="group-hover/logout:scale-110 transition-transform" />
                                 <span>Keluar</span>
                             </button>
+                        ) : (
+                            <button
+                                onClick={() => setShowShiftSummary(true)}
+                                className="p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-[#800000] border border-white/10 transition-all"
+                                title="Keluar"
+                            >
+                                <LogOut size={16} />
+                            </button>
                         )}
                     </div>
                 </div>
             </aside>
 
             {/* Mobile Bottom Navigation Layout */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-surface-950/95 backdrop-blur-xl border-t border-white/10 pb-safe">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[#050505] border-t border-white/10 pb-safe">
                 <nav className="flex items-center justify-around px-2 py-3">
                     {navItems.map((item) => (
                         <NavLink

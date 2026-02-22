@@ -28,8 +28,7 @@ const Badge = ({ children, color = 'green' }) => {
 };
 
 const Section = ({ title, icon: Icon, accent = 'text-primary', children }) => (
-    <section className="rounded-2xl overflow-hidden mb-5"
-        style={{ background: 'linear-gradient(145deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))', boxShadow: '0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+    <section className="rounded-2xl overflow-hidden mb-5 bg-[#0a0a0a] border border-white/5 shadow-xl">
         <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
             <div className={`p-2 rounded-lg bg-white/5 border border-white/8 ${accent}`}><Icon size={16} /></div>
             <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-widest">{title}</h3>
@@ -199,7 +198,7 @@ const OwnerToolsSection = () => {
             {/* Add/Edit Product Modal */}
             {showAddProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-                    <div className="w-full max-w-sm rounded-3xl p-6" style={{ background: 'rgba(14,2,3,0.98)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+                    <div className="w-full max-w-sm rounded-3xl p-6 bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                         <div className="flex justify-between items-center mb-5">
                             <h3 className="text-lg font-black text-gray-900 dark:text-white">{editingProduct ? 'Edit Produk' : 'Tambah Produk'}</h3>
                             <button onClick={() => setShowAddProduct(false)} className="text-gray-500 hover:text-gray-900 dark:text-white"><X size={18} /></button>

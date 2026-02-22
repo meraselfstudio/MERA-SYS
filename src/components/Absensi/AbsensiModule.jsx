@@ -53,7 +53,7 @@ const StepSelectCrew = memo(({ crew, onCrewSelect }) => (
             <button
                 key={c.id}
                 onClick={() => onCrewSelect(c)}
-                className="group relative bg-surface-800/50 backdrop-blur-md border border-white/10 p-6 rounded-2xl hover:bg-surface-700 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 text-center flex flex-col items-center gap-4"
+                className="group relative bg-[#0a0a0a] backdrop-blur-md border border-white/10 p-6 rounded-2xl hover:bg-[#111] transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 text-center flex flex-col items-center gap-4"
             >
                 <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                     <User size={32} />
@@ -89,7 +89,7 @@ const StableWebcam = memo(({ webcamRef, showShiftOverlay, selectedShift, onCaptu
             <div className="absolute bottom-8 left-0 right-0 flex justify-center">
                 <button
                     onClick={onCapture}
-                    className="w-20 h-20 rounded-full bg-surface-800 border-4 border-white/10 hover:border-primary hover:scale-110 transition-all shadow-xl flex items-center justify-center group"
+                    className="w-20 h-20 rounded-full bg-[#0a0a0a] border-4 border-white/10 hover:border-primary hover:scale-110 transition-all shadow-xl flex items-center justify-center group"
                 >
                     <div className="w-16 h-16 rounded-full bg-gray-100 group-hover:bg-primary transition-colors"></div>
                 </button>
@@ -126,7 +126,7 @@ const StepCaptureShift = memo(({ selectedCrew, selectedShift, webcamRef, onCaptu
                                 onClick={() => onShiftSelect(shift)}
                                 className={`w-full text-left p-4 rounded-xl border transition-all ${selectedShift?.id === shift.id
                                     ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30'
-                                    : 'bg-surface-900 text-gray-400 border-white/10 hover:bg-surface-800'
+                                    : 'bg-[#0a0a0a] text-gray-400 border-white/10 hover:bg-[#111]'
                                     }`}
                             >
                                 <div className="flex items-center gap-2">
@@ -191,7 +191,7 @@ const StepSuccess = memo(({ selectedCrew, salaryDetails, onFinish, hasOnLogin })
         <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">System Unlocked!</h2>
         <p className="text-gray-400 mb-8">Smile! - {selectedCrew?.name}.</p>
 
-        <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 w-full mb-8">
+        <div className="bg-[#0a0a0a] backdrop-blur-md border border-gray-800 rounded-2xl p-6 w-full mb-8">
             <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Your Work</div>
             <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">Salary</span>

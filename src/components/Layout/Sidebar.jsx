@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                             )}
                         >
                             {/* Icon always visible */}
-                            <div className={clsx("transition-transform duration-300", collapsed && isActive ? "scale-110" : "")}>
+                            <div className="transition-transform duration-300 group-hover:scale-110">
                                 {item.icon}
                             </div>
 

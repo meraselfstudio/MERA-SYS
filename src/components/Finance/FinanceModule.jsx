@@ -11,15 +11,8 @@ import {
 import { useFinance, computeBonus } from '../../context/FinanceContext';
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
-const glass = {
-    background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.08)',
-};
-const deep = { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' };
-
 const GC = ({ children, className = '', style = {} }) => (
-    <div className={`rounded-2xl ${className}`} style={{ ...glass, ...style }}>{children}</div>
+    <div className={`rounded-2xl overflow-hidden bg-[#0a0a0a] border border-white/5 shadow-xl ${className}`} style={style}>{children}</div>
 );
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString('id-ID')}`;
@@ -98,7 +91,7 @@ const PastDataModal = ({ onClose, onSave }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <div className="w-full max-w-md rounded-3xl p-7" style={{ background: 'rgba(14,2,3,0.99)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+            <div className="w-full max-w-md rounded-3xl p-7 bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                 <div className="flex justify-between items-center mb-5">
                     <div><h3 className="text-xl font-black text-gray-900 dark:text-white">Input Data Lama (CSV)</h3><p className="text-xs text-gray-600 mt-0.5">Import transaksi dari file CSV</p></div>
                     <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-gray-600 hover:text-gray-900 dark:text-white"><X size={18} /></button>
@@ -151,8 +144,7 @@ const PinScreen = ({ onUnlock }) => {
 
     return (
         <div className="min-h-screen flex items-center justify-center">
-            <div className={`w-80 rounded-3xl p-8 text-center ${shake ? 'animate-bounce' : ''}`}
-                style={{ background: 'rgba(10,2,2,0.98)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+            <div className={`w-80 rounded-3xl p-8 text-center bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)] ${shake ? 'animate-bounce' : ''}`}>
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
                     <Lock size={26} className="text-primary" />
                 </div>
@@ -169,8 +161,7 @@ const PinScreen = ({ onUnlock }) => {
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map((d, i) => (
                         <button key={i}
                             onClick={() => d === '⌫' ? setPin(p => p.slice(0, -1)) : d !== '' && press(String(d))}
-                            className={`h-14 rounded-2xl font-bold text-xl transition-all active:scale-90 ${d === '' ? 'invisible' : 'text-white hover:bg-white/8 active:bg-white/15'}`}
-                            style={d !== '' ? deep : {}}>
+                            className={`h-14 rounded-2xl font-bold text-xl transition-all active:scale-90 ${d === '' ? 'invisible' : 'text-white bg-black/30 hover:bg-white/8 active:bg-white/15 border border-white/5'}`}>
                             {d}
                         </button>
                     ))}
@@ -304,7 +295,7 @@ const ExpenseModal = ({ onClose, onSave }) => {
     };
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <div className="w-full max-w-md rounded-3xl p-7" style={{ background: 'rgba(14,2,3,0.99)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+            <div className="w-full max-w-md rounded-3xl p-7 bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                 <div className="flex justify-between items-center mb-5">
                     <div>
                         <h3 className="text-xl font-black text-gray-900 dark:text-white">Catat Pengeluaran</h3>

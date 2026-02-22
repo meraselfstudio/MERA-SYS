@@ -16,12 +16,7 @@ const STATUS_STYLES = {
 };
 
 const GlassCard = ({ children, className = '' }) => (
-    <div className={`rounded-2xl overflow-hidden ${className}`}
-        style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.08)',
-        }}>
+    <div className={`rounded-2xl overflow-hidden bg-[#0A0A0A] border border-white/5 shadow-xl ${className}`}>
         {children}
     </div>
 );
@@ -49,7 +44,7 @@ const NewBookingModal = ({ onClose, onSave }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <div className="w-full max-w-md rounded-3xl p-7" style={{ background: 'rgba(14,2,3,0.99)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+            <div className="w-full max-w-md rounded-3xl p-7 bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                 <div className="flex justify-between items-center mb-5">
                     <h3 className="text-xl font-black text-gray-900 dark:text-white">New Booking</h3>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-gray-900 dark:text-white"><X size={18} /></button>
@@ -129,7 +124,7 @@ const EditBookingModal = ({ booking, onClose, onSave }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <div className="w-full max-w-md rounded-3xl p-7" style={{ background: 'rgba(14,2,3,0.99)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 40px 80px rgba(0,0,0,0.9)' }}>
+            <div className="w-full max-w-md rounded-3xl p-7 bg-[#0a0a0a] border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                 <div className="flex justify-between items-center mb-5">
                     <h3 className="text-xl font-black text-gray-900 dark:text-white">Edit Booking</h3>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-gray-900 dark:text-white"><X size={18} /></button>
@@ -672,7 +667,7 @@ const ChecklistTab = () => {
             {/* Add Task Modal */}
             {showAdd && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-                    <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: 'rgba(20,3,5,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px rgba(0,0,0,0.8)' }}>
+                    <div className="w-full max-w-sm rounded-2xl p-6 bg-[#0a0a0a] border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-black text-gray-900 dark:text-white">Tambah Task</h3>
                             <button onClick={() => setShowAdd(false)} className="text-gray-500 hover:text-gray-900 dark:text-white"><X size={18} /></button>
@@ -693,7 +688,7 @@ const ChecklistTab = () => {
             {/* Add Tab Modal */}
             {showAddTab && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-                    <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: 'rgba(20,3,5,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px rgba(0,0,0,0.8)' }}>
+                    <div className="w-full max-w-sm rounded-2xl p-6 bg-[#0a0a0a] border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-black text-gray-900 dark:text-white">Tambah Tab Baru</h3>
                             <button onClick={() => setShowAddTab(false)} className="text-gray-500 hover:text-gray-900 dark:text-white"><X size={18} /></button>

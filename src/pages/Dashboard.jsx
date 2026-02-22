@@ -368,37 +368,45 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 /* ── Default tab config (seeds localStorage on first load) ── */
 const DEFAULT_TABS = [
     {
-        key: 'opening', label: 'Opening Shift', emoji: '🌅', accent: 'text-amber-400', reset: 'daily',
+        key: 'opening', label: 'Opening Shift (BAB 1)', emoji: '🌅', accent: 'text-amber-400', reset: 'daily',
         tasks: [
-            { id: 'o1', label: 'Nyalakan semua lampu & AC studio' },
-            { id: 'o2', label: 'Cek & isi kertas printer thermal' },
-            { id: 'o3', label: 'Cek tinta/ink printer' },
-            { id: 'o4', label: 'Test scan QRIS' },
-            { id: 'o5', label: 'Bersihkan lobby — meja, kursi, pajangan, properti' },
-            { id: 'o6', label: 'Bersihkan Basic Studio — alat & prop' },
-            { id: 'o7', label: 'Bersihkan Thematic Studio — alat & prop' },
-            { id: 'o8', label: 'Bersihkan balkon dalam — meja & kursi tinggi' },
-            { id: 'o9', label: 'Bersihkan semua kaca pintu, jendela & cermin' },
-            { id: 'o10', label: 'Cek koneksi internet dan sistem kasir' },
-            { id: 'o11', label: 'Absen di tablet kasir' },
+            { id: 'o1', label: 'Datang 30 mnt sebelum beroperasi (Pakaian rapi, parfum)' },
+            { id: 'o2', label: 'LOBBY: Sapu, pel, tata meja, bersihkan kaca & nyalakan lampu' },
+            { id: 'o3', label: 'STUDIO: Tata alat & properti (Basic & Thematic)' },
+            { id: 'o4', label: 'Nyalakan alat elektronik & pastikan berfungsi normal' },
+            { id: 'o5', label: 'Cek stok kertas & tinta (pesan jika menipis)' },
+            { id: 'o6', label: 'Login os.meraselfstudio.com di iMac' },
+            { id: 'o7', label: 'Siapkan HP Android khusus untuk mengecek Livin Mandiri' }
         ],
     },
     {
-        key: 'closing', label: 'Closing Shift', emoji: '🌙', accent: 'text-blue-400', reset: 'daily',
+        key: 'operational', label: 'Operational (BAB 2-4)', emoji: '📸', accent: 'text-blue-400', reset: 'daily',
+        tasks: [
+            { id: 'op1', label: 'Sambut tamu (5S) & Cek Screenshot Tiket' },
+            { id: 'op2', label: 'Verifikasi: Cek mutasi 50k (jika Unverified) / Langsung hadir (Keep Slot)' },
+            { id: 'op3', label: 'Jelaskan aturan, durasi, rekomendasi bg, & cara pakai remote' },
+            { id: 'op4', label: 'Atur timer & Pasang Preset B&W saat foto percobaan' },
+            { id: 'op5', label: 'Segera Ekspor foto saat timer habis & atur timer pilih foto' },
+            { id: 'op6', label: 'WAJIB tawarkan Upselling (Add-Ons) saat tamu memilih foto' },
+            { id: 'op7', label: 'Check-out iMac & Tagih sisa lunas (Cash/QRIS)' },
+            { id: 'op8', label: 'Print foto fisik & masukkan ke dalam packaging' },
+            { id: 'op9', label: 'Buat Folder Drive & Kirim link softfile via DM Instagram' },
+            { id: 'op10', label: 'Periksa studio pasca-sesi (Background sobek/properti)' },
+        ]
+    },
+    {
+        key: 'closing', label: 'Closing Shift (BAB 5)', emoji: '🌙', accent: 'text-purple-400', reset: 'daily',
         tasks: [
             { id: 'c1', label: 'Print rekap penjualan hari ini' },
-            { id: 'c2', label: 'Bersihkan semua studio & prop' },
-            { id: 'c3', label: 'Matikan seluruh lampu studio & AC' },
-            { id: 'c4', label: 'Matikan semua peralatan elektronik' },
-            { id: 'c5', label: 'Kunci pintu & jendela studio' },
-            { id: 'c6', label: 'Simpan uang tunai ke brankas' },
-            { id: 'c7', label: 'Cek stok kertas & tinta untuk besok' },
-            { id: 'c8', label: 'Laporan shift di grup WA' },
-            { id: 'c9', label: 'Pastikan area kasir bersih & rapi' },
+            { id: 'c2', label: 'Matikan semua peralatan elektronik dengan hati-hati' },
+            { id: 'c3', label: 'Pastikan semua properti dikembalikan ke tempatnya' },
+            { id: 'c4', label: 'Kunci pintu & jendela studio' },
+            { id: 'c5', label: 'Laporan shift di grup WA' },
+            { id: 'c6', label: 'Pastikan area kasir bersih & rapi' },
         ],
     },
     {
-        key: 'weekly', label: 'Tugas Mingguan', emoji: '📅', accent: 'text-purple-400', reset: 'weekly',
+        key: 'weekly', label: 'Tugas Mingguan', emoji: '📅', accent: 'text-green-400', reset: 'weekly',
         tasks: [
             { id: 'w1', label: 'Deep clean seluruh studio' },
             { id: 'w2', label: 'Sortir & buang prop yang rusak' },
@@ -408,20 +416,10 @@ const DEFAULT_TABS = [
             { id: 'w6', label: 'Rapat mingguan tim' },
         ],
     },
-    {
-        key: 'admin', label: 'Administrator', emoji: '💼', accent: 'text-green-400', reset: 'daily',
-        tasks: [
-            { id: 'a1', label: 'Balas DM Instagram (< 30 menit)' },
-            { id: 'a2', label: 'Update jadwal booking hari ini' },
-            { id: 'a3', label: 'Kirim reminder ke customer yang booking' },
-            { id: 'a4', label: 'Siapkan link softfile customer' },
-            { id: 'a5', label: 'Rekap transaksi di sistem kasir' },
-        ],
-    },
 ];
 
-const TABS_KEY = 'checklist_tabs_v1';
-const DONE_KEY = 'checklist_v2';
+const TABS_KEY = 'checklist_tabs_v2_meraos';
+const DONE_KEY = 'checklist_done_v2_meraos';
 
 const loadTabs = () => {
     try { const r = localStorage.getItem(TABS_KEY); return r ? JSON.parse(r) : DEFAULT_TABS; }
@@ -749,7 +747,7 @@ const LiveClockHeader = () => {
         <div className="flex items-center gap-4">
             <div>
                 <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tight font-mono leading-none">{timeStr}</span>
+                    <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{timeStr}</span>
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-black ${shift.bg} ${shift.border} ${shift.color}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${shift.dot}`} />
                         {shift.label}

@@ -19,18 +19,18 @@
   --color-cash: #10B981;
   --color-qris: #3B82F6;
 
-  /* Background layers — LIGHT MODE DEFAULT */
-  --color-bg: #F8F9FA;
+  /* Background layers — LIGHT MODE DEFAULT (Craft Paper Brown) */
+  --color-bg: #d7c4a1;
   /* Clean light background */
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F1F5F9;
-  --color-surface-3: #E2E8F0;
+  --color-surface: #e6d5b8;
+  --color-surface-2: #ebdcc3;
+  --color-surface-3: #f0e3ce;
   --color-border: rgba(0, 0, 0, 0.08);
 
-  /* Text — LIGHT MODE DEFAULT */
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
+  /* Text — LIGHT MODE DEFAULT (Black text) */
+  --color-text-primary: #111111;
+  --color-text-secondary: #333333;
+  --color-text-muted: #555555;
 
   /* Glass tokens — LIGHT MODE DEFAULT */
   --glass-bg: rgba(255, 255, 255, 0.6);
@@ -81,13 +81,13 @@
 
 .dark {
   /* Background layers — DARK MODE */
-  --color-bg: #0A0101;
+  --color-bg: #000000;
   /* Deepest layer — page bg */
-  --color-surface: #160204;
+  --color-surface: #050505;
   /* Sidebar / raised panel */
-  --color-surface-2: #1F0406;
+  --color-surface-2: #0A0A0A;
   /* Cards on sidebar */
-  --color-surface-3: #2A080C;
+  --color-surface-3: #111111;
   /* Floating cards, modals elevation */
   --color-border: rgba(255, 255, 255, 0.07);
 

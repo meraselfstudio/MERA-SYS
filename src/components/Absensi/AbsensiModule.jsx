@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../../context/FinanceContext';
+import { supabase } from '../../lib/supabase';
 
 
 
@@ -36,10 +37,10 @@ const Header = memo(({ currentTime }) => (
             <p className="text-primary-light text-sm">Méra OS System</p>
         </div>
         <div className="text-right">
-            <div className="text-3xl font-mono text-gray-900 dark:text-white font-bold">
+            <div className="text-3xl text-gray-900 dark:text-white font-bold tracking-tight leading-none">
                 {format(currentTime, 'HH:mm:ss')}
             </div>
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 text-sm mt-1">
                 {format(currentTime, 'EEEE, dd MMMM yyyy', { locale: id })}
             </div>
         </div>
@@ -272,29 +273,55 @@ const AbsensiModule = ({ onLogin }) => {
         setStep('capture-shift');
     };
 
-    const confirmAbsensi = () => {
+    const confirmAbsensi = async () => {
         const base = selectedShift?.salary || 0;
         const bonus = selectedShift?.id.includes('weekend') ? 10000 : 0;
         const denda = 0;
         const stats = { base, bonus, denda, total: base + bonus - denda };
         setSalaryDetails(stats);
 
-        // Record attendance
-        addAbsensi({
-            crewId: selectedCrew?.id,
-            crewName: selectedCrew?.name,
-            posisi: selectedCrew?.posisi,
-            shiftLabel: selectedShift?.label,
-        });
+        try {
+            // 1. Convert Base64 capturedImage to Blob
+            const res = await fetch(capturedImage);
+            const blob = await res.blob();
+            const fileName = `login_${selectedCrew?.id}_${Date.now()}.jpg`;
 
-        if (selectedCrew?.posisi === 'Intern') {
-            if (onLogin) {
-                onLogin({ ...selectedCrew, shift: selectedShift, loginTime: new Date().toISOString() });
-            } else {
-                navigate('/dashboard');
-            }
+            // 2. Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('attendance_photos')
+                .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+            if (uploadError) throw uploadError;
+
+            // 3. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('attendance_photos')
+                .getPublicUrl(fileName);
+
+            // 4. Record attendance
+            addAbsensi({
+                crewId: selectedCrew?.id,
+                crewName: selectedCrew?.name,
+                posisi: selectedCrew?.posisi,
+                shiftLabel: selectedShift?.label,
+                photoUrl: publicUrl
+            });
+        } catch (err) {
+            console.error("Failed to upload login photo to Supabase:", err);
+            // Fallback: still record attendance if image fails
+            addAbsensi({
+                crewId: selectedCrew?.id,
+                crewName: selectedCrew?.name,
+                posisi: selectedCrew?.posisi,
+                shiftLabel: selectedShift?.label,
+            });
+        }
+
+        // Direct Login -> Bypass StepSuccess (Salary UI)
+        if (onLogin) {
+            onLogin({ ...selectedCrew, shift: selectedShift, loginTime: new Date().toISOString() });
         } else {
-            setStep('success');
+            navigate('/pos');
         }
     };
 

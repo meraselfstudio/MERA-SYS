@@ -49,7 +49,8 @@ const AppRoutes = () => {
     return (
         <MainLayout>
             <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Changed root redirect to POS as requested */}
+                <Route path="/" element={<Navigate to="/pos" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
 
                 {/* Protected Routes */}

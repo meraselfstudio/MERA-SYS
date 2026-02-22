@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-
+import { supabase } from '../lib/supabase';
 /* ─── Storage Keys ─────────────────────────────────── */
 const KEYS = {
     transactions: 'mera_transactions',
@@ -65,17 +65,119 @@ const save = (key, value) => {
 
 const todayKey = () => `mera_absensi_${new Date().toISOString().slice(0, 10)}`;
 
-/* ─── Context ──────────────────────────────────────── */
 const FinanceContext = createContext(null);
 
 export const FinanceProvider = ({ children }) => {
-    const [transactions, setTransactions] = useState(() => load(KEYS.transactions, []));
-    const [expenses, setExpenses] = useState(() => load(KEYS.expenses, []));
-    const [bookings, setBookings] = useState(() => load(KEYS.bookings, []));
-    const [crew, setCrew] = useState(() => load(KEYS.crew, INIT_CREW));
-    const [products, setProducts] = useState(() => load(KEYS.products, INIT_PRODUCTS));
-    const [absensi, setAbsensi] = useState(() => load(todayKey(), []));
+    const [transactions, setTransactions] = useState([]);
+    const [expenses, setExpenses] = useState([]);
+    const [bookings, setBookings] = useState([]);
+    const [crew, setCrew] = useState(INIT_CREW);
+    const [products, setProducts] = useState(INIT_PRODUCTS);
+    const [absensi, setAbsensi] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const [txData, expData, bookData, attData] = await Promise.all([
+                    supabase.from('transactions').select('*'),
+                    supabase.from('expenses').select('*'),
+                    supabase.from('bookings').select('*'),
+                    supabase.from('attendance').select('*')
+                ]);
+
+                if (txData.data) {
+                    const mappedTx = txData.data.map(t => ({
+                        id: t.id,
+                        time: new Date(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                        desc: `Transaction ${t.id.slice(0, 8)}`,
+                        type: t.total_amount > 0 ? 'IN' : 'OUT',
+                        category: 'OTS',
+                        amount: Number(t.total_amount),
+                        method: t.payment_method?.toUpperCase(),
+                        date: new Date(t.created_at).toISOString().slice(0, 10),
+                    }));
+                    setTransactions(mappedTx);
+                }
+
+                if (expData.data) {
+                    const mappedExp = expData.data.map(e => ({
+                        id: e.id,
+                        desc: e.description,
+                        amount: Number(e.amount),
+                        category: e.category,
+                        payment: 'CASH', // Default for now
+                        date: new Date(e.date).toISOString().slice(0, 10)
+                    }));
+                    setExpenses(mappedExp);
+                }
+
+                if (bookData.data) {
+                    const mappedBook = bookData.data.map(b => ({
+                        id: b.id,
+                        name: b.customer_name,
+                        package: b.package_type,
+                        price: 0, // Would need complex query or schema change for exact price
+                        tanggal: b.booking_date,
+                        jam: b.time_slot,
+                        status: b.status === 'confirmed' ? 'PAID' : b.status.toUpperCase(),
+                        pmt: 'QRIS',
+                        createdAt: b.created_at
+                    }));
+                    setBookings(mappedBook);
+                }
+
+                if (attData.data) {
+                    const mappedAtt = attData.data.map(a => ({
+                        id: a.id,
+                        crewId: a.user_id, // This would need to match the static INIT_CREW somehow, or fetch crew from DB
+                        time: new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                        date: new Date(a.check_in).toISOString().slice(0, 10),
+                    }));
+                    setAbsensi(mappedAtt);
+                }
+
+            } catch (err) {
+                console.error("Error fetching initial data from Supabase:", err);
+                // Fallback to local storage if network fails
+                setTransactions(load(KEYS.transactions, []));
+                setExpenses(load(KEYS.expenses, []));
+                setBookings(load(KEYS.bookings, []));
+                setCrew(load(KEYS.crew, INIT_CREW));
+                setProducts(load(KEYS.products, INIT_PRODUCTS));
+                setAbsensi(load(todayKey(), []));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInitialData();
+
+        // Setup Realtime Subscriptions
+        const channels = supabase.channel('custom-all-channel')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'transactions' },
+                (payload) => {
+                    // In a complete implementation, we'd handle insert/update/delete specifically
+                    fetchInitialData();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'bookings' },
+                (payload) => {
+                    fetchInitialData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channels);
+        };
+    }, []);
+
+    // Keep saving to local storage as a backup mechanism for offline capabilities
     useEffect(() => { save(KEYS.transactions, transactions); }, [transactions]);
     useEffect(() => { save(KEYS.expenses, expenses); }, [expenses]);
     useEffect(() => { save(KEYS.bookings, bookings); }, [bookings]);

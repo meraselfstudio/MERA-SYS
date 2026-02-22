@@ -25,6 +25,15 @@ const NotFound = () => (
 
 import { FinanceProvider } from './context/FinanceContext';
 
+// Simplified role checking component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+    const { user } = useAuth();
+    if (!allowedRoles.includes(user?.role)) {
+        return <Navigate to="/dashboard" replace />;
+    }
+    return children;
+};
+
 const AppRoutes = () => {
     const { isAuthenticated } = useAuth();
 
@@ -41,11 +50,22 @@ const AppRoutes = () => {
             <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/pos" element={<POS />} />
-                {/* Absensi Route Removed - Use LockScreen */}
-                <Route path="/finance" element={<Finance />} />
-                <Route path="/absensi" element={<Absensi />} />
+
+                {/* Protected Routes */}
+                <Route path="/pos" element={
+                    <ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'CREW', 'INTERN']}>
+                        <POS />
+                    </ProtectedRoute>
+                } />
+                <Route path="/finance" element={
+                    <ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+                        <Finance />
+                    </ProtectedRoute>
+                } />
                 <Route path="/settings" element={<Settings />} />
+
+                {/* Shared/Public Routes within App */}
+                <Route path="/absensi" element={<Absensi />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </MainLayout>

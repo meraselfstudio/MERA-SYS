@@ -21,6 +21,11 @@ const POSModule = () => {
     const handlePrint = useReactToPrint({
         content: () => receiptRef.current,
         documentTitle: `Receipt-${new Date().getTime()}`,
+        onAfterPrint: () => {
+            setCart([]);
+            setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
+            setShowReceiptPreview(false);
+        }
     });
 
     const handleConfirmAndPay = () => {
@@ -37,13 +42,6 @@ const POSModule = () => {
 
         // 2. Trigger Print Dialog
         handlePrint();
-
-        // 3. Clear Cart & Close Modal (with slight delay to allow print to capture)
-        setTimeout(() => {
-            setCart([]);
-            setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
-            setShowReceiptPreview(false);
-        }, 500);
     };
 
     const handleShareReceipt = async () => {
@@ -70,23 +68,28 @@ const POSModule = () => {
                     text: `Receipt for ${customer.name}`,
                     files: [file]
                 });
+
+                // Only clear if share is successful
+                setCart([]);
+                setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
+                setShowReceiptPreview(false);
             } else {
                 // Fallback to download
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = file.name;
+                a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
+                // Delay revoking to prevent mobile browser 404 bug when navigating to Blob
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-            setTimeout(() => {
                 setCart([]);
                 setCustomer({ name: '', type: 'Booking', payment: 'QRIS' });
                 setShowReceiptPreview(false);
-            }, 500);
+            }
 
         } catch (err) {
             console.error("Error sharing receipt:", err);

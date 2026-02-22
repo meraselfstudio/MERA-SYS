@@ -3,7 +3,7 @@ import Webcam from 'react-webcam';
 import { Check, AlertTriangle, ShieldCheck, X, Camera, DollarSign, Wallet, CreditCard } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
-
+import { supabase } from '../../lib/supabase';
 const ShiftSummary = ({ onClose }) => {
     const { stats } = useFinance();
     const { logout, user } = useAuth();
@@ -27,13 +27,58 @@ const ShiftSummary = ({ onClose }) => {
         setStep(3);
     };
 
-    const handleScan = () => {
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleScan = async () => {
         const imageSrc = webcamRef.current.getScreenshot();
         setCapturedImage(imageSrc);
-        // Simulate scanning delay
-        setTimeout(() => {
+        setIsUploading(true);
+
+        try {
+            // 1. Convert Base64 to Blob
+            const res = await fetch(imageSrc);
+            const blob = await res.blob();
+            const fileName = `checkout_${user?.id}_${Date.now()}.jpg`;
+
+            // 2. Upload to Supabase Storage (assuming bucket 'attendance_photos' exists)
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('attendance_photos')
+                .upload(fileName, blob, {
+                    contentType: 'image/jpeg',
+                });
+
+            if (uploadError) {
+                console.error("Upload error details:", uploadError);
+                throw uploadError;
+            }
+
+            // 3. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('attendance_photos')
+                .getPublicUrl(fileName);
+
+            // 4. Update Attendance Record in DB
+            // Assuming there's an active attendance record for this user today
+            const { error: dbError } = await supabase
+                .from('attendance')
+                .update({
+                    check_out: new Date().toISOString(),
+                    photo_url: publicUrl,
+                    status: 'completed'
+                })
+                .eq('user_id', user?.id)
+                .eq('status', 'active');
+
+            if (dbError) throw dbError;
+
+        } catch (error) {
+            console.error("Failed to upload face scan or update attendance:", error);
+            // Optionally show an error message to the user here. For now, we still logout.
+            alert("Gagal mengunggah foto absen. Namun session tetap diakhiri.");
+        } finally {
+            setIsUploading(false);
             logout();
-        }, 1500);
+        }
     };
 
     return (

@@ -70,7 +70,7 @@ const CATEGORIES = ['Basic Studio', 'Thematic Studio', 'Add Ons', 'Print', 'Merc
 
 const OwnerToolsSection = () => {
     const { resetAll, resetMonth, products, addProduct, updateProduct, deleteProduct } = useFinance();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const [ownerTab, setOwnerTab] = useState('data'); // 'data' | 'produk'
 
     // Month Reset State
@@ -118,6 +118,11 @@ const OwnerToolsSection = () => {
     };
 
     const inp = "bg-black/40 border border-white/8 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-primary placeholder-gray-700";
+
+    // Protect Owner Tools so only OWNER can see them
+    if (user?.role !== 'OWNER' && user?.role !== 'ADMIN') {
+        return null;
+    }
 
     return (
         <>

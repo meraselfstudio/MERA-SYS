@@ -8,8 +8,8 @@ import html2canvas from 'html2canvas';
 import { createClient } from '@supabase/supabase-js';
 
 // === GANTI DENGAN KREDENSIAL SUPABASE-MU ===
-const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL';
-const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = 'https://kgmeqorjbgkwalfdoprm.supabase.co';
+const supabaseKey = 'sb_publishable_m63YfkkKuHeIwIwuI4jp_Q_Jy14KhUa';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const POSModule = () => {

@@ -25,8 +25,33 @@ export default function CustomerBooking() {
         ]
     };
 
+    // --- JADWAL DINAMIS ---
+    const generateTimeSlots = (dateString) => {
+        if (!dateString) return [];
+        const date = new Date(dateString);
+        const day = date.getDay(); // 0 is Sunday, 1-4 Mon-Thu, 5-6 Fri-Sat
+
+        let slots = [];
+        let time = new Date(date);
+        time.setHours(9, 0, 0, 0); // Start at 09:00
+
+        const endTime = new Date(date);
+        endTime.setHours(21, 0, 0, 0); // End at 21:00
+
+        // Weekday (Senin-Kamis) = 60 menit, Weekend (Jumat-Minggu) = 20 menit
+        const isWeekend = day === 0 || day >= 5;
+        const intervalInMinutes = isWeekend ? 20 : 60;
+
+        while (time < endTime) {
+            const h = time.getHours().toString().padStart(2, '0');
+            const m = time.getMinutes().toString().padStart(2, '0');
+            slots.push(`${h}:${m}`);
+            time.setMinutes(time.getMinutes() + intervalInMinutes);
+        }
+        return slots;
+    };
+
     const basicBackgrounds = ['Light Grey', 'Dusty Pink', 'Blue', 'Maroon', 'Dark Grey', 'Brown'];
-    const availableHours = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
 
     const [form, setForm] = useState({
         kategori: 'basic',
@@ -249,7 +274,7 @@ export default function CustomerBooking() {
                     />
                     {form.tanggal && (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                            {availableHours.map(jam => {
+                            {generateTimeSlots(form.tanggal).map(jam => {
                                 const isBooked = bookedSlots.includes(jam);
                                 return (
                                     <button key={jam} disabled={isBooked || loading} onClick={() => setForm({ ...form, jam })} className={`py-4 rounded-xl text-sm font-black transition-all border ${isBooked ? 'bg-white/5 text-gray-800 border-transparent cursor-not-allowed' : form.jam === jam ? 'bg-white text-black border-white scale-105 shadow-lg' : 'bg-[#111] text-gray-400 border-white/5 hover:border-white/30'}`}>

@@ -22,7 +22,23 @@ const GlassCard = ({ children, className = '' }) => (
 );
 
 /* ── NEW BOOKING MODAL ──────────────────────────── */
-const TIME_SLOTS = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
+const generateTimeSlots = (dateString) => {
+    if (!dateString) return [];
+    const date = new Date(dateString);
+    const day = date.getDay();
+    let slots = [];
+    let time = new Date(date);
+    time.setHours(9, 0, 0, 0);
+    const endTime = new Date(date);
+    endTime.setHours(21, 0, 0, 0);
+    const intervalInMinutes = (day === 0 || day >= 5) ? 20 : 60;
+    while (time < endTime) {
+        slots.push(`${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`);
+        time.setMinutes(time.getMinutes() + intervalInMinutes);
+    }
+    return slots;
+};
+
 const FALLBACK_PACKAGES = ['Self Photo Session', 'Party Photo Session', 'Thematic Basic', 'Thematic Package', 'Wide Photo', 'Custom Session'];
 
 const NewBookingModal = ({ onClose, onSave, bookings, products }) => {
@@ -43,7 +59,7 @@ const NewBookingModal = ({ onClose, onSave, bookings, products }) => {
     };
 
     const bookedSlots = bookings.filter(b => b.date === form.date && b.status !== 'CANCELLED').map(b => b.time);
-    const availableSlots = TIME_SLOTS.filter(t => !bookedSlots.includes(t));
+    const availableSlots = generateTimeSlots(form.date).filter(t => !bookedSlots.includes(t));
 
     const submit = e => {
         e.preventDefault();
@@ -143,7 +159,7 @@ const EditBookingModal = ({ booking, onClose, onSave, bookings, products }) => {
     };
 
     const bookedSlots = bookings.filter(b => b.date === form.date && b.id !== form.id && b.status !== 'CANCELLED').map(b => b.time);
-    const availableSlots = TIME_SLOTS.filter(t => !bookedSlots.includes(t));
+    const availableSlots = generateTimeSlots(form.date).filter(t => !bookedSlots.includes(t));
 
     const submit = e => {
         e.preventDefault();

@@ -9,30 +9,45 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const initializeAuth = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-            if (session?.user) {
-                // Fetch profile data from Supabase
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+                if (error) throw error; // Catch Supabase API errors
 
-                const mergedUser = { ...session.user, ...profile };
-                setUser(mergedUser);
-                setIsAuthenticated(true);
-                // Keep local storage for synchronous access in other parts of the app if needed
-                localStorage.setItem('mera_user', JSON.stringify(mergedUser));
-            } else {
-                // Fallback check local storage for existing session
+                if (session?.user) {
+                    // Fetch profile data from Supabase
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (profileError) throw profileError;
+
+                    const mergedUser = { ...session.user, ...profile };
+                    setUser(mergedUser);
+                    setIsAuthenticated(true);
+                    // Keep local storage for synchronous access in other parts of the app if needed
+                    localStorage.setItem('mera_user', JSON.stringify(mergedUser));
+                } else {
+                    // Fallback check local storage for existing session
+                    const storedUser = localStorage.getItem('mera_user');
+                    if (storedUser) {
+                        setUser(JSON.parse(storedUser));
+                        setIsAuthenticated(true);
+                    }
+                }
+            } catch (err) {
+                console.error("Auth initialization failed (check Supabase Envs):", err);
+                // Fallback check local storage for existing session on network failure
                 const storedUser = localStorage.getItem('mera_user');
                 if (storedUser) {
                     setUser(JSON.parse(storedUser));
                     setIsAuthenticated(true);
                 }
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         initializeAuth();

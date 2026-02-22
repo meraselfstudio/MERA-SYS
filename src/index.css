@@ -80,21 +80,16 @@
 }
 
 .dark {
-  /* Background layers — DARK MODE */
-  --color-bg: #000000;
-  /* Deepest layer — page bg */
-  --color-surface: #050505;
-  /* Sidebar / raised panel */
-  --color-surface-2: #0A0A0A;
-  /* Cards on sidebar */
-  --color-surface-3: #111111;
-  /* Floating cards, modals elevation */
+  /* Background layers — DARK MODE matching POS */
+  --color-bg: #050505;
+  --color-surface: #0a0a0a;
+  --color-surface-2: #111111;
+  --color-surface-3: #1a1a1a;
   --color-border: rgba(255, 255, 255, 0.07);
 
   /* Text — DARK MODE */
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #C4A0A5;
-  /* warm muted, NOT red-pink like before */
   --color-text-muted: #7A5860;
 
   /* Glass tokens — DARK MODE */
@@ -132,18 +127,60 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   letter-spacing: var(--letter-spacing-tight);
-  /* Subtle background texture grain for glass depth */
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(217, 22, 54, 0.05) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 30% at 80% 90%, rgba(217, 22, 54, 0.02) 0%, transparent 60%);
-  background-attachment: fixed;
   transition: background-color var(--duration-normal) var(--easing), color var(--duration-normal) var(--easing);
 }
 
 .dark body {
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(217, 22, 54, 0.12) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 30% at 80% 90%, rgba(217, 22, 54, 0.06) 0%, transparent 60%);
+  background-image: none;
+  background-color: #000000;
+}
+
+/* Light mode overrides for layout readability on craft paper background */
+:root:not(.dark) .text-white {
+  color: #111111 !important;
+}
+
+/* Ensure buttons with text-white stay white */
+:root:not(.dark) button.text-white {
+  color: #ffffff !important;
+}
+
+:root:not(.dark) .text-gray-300,
+:root:not(.dark) .text-gray-400 {
+  color: #444444 !important;
+}
+
+:root:not(.dark) .text-gray-500 {
+  color: #555555 !important;
+}
+
+:root:not(.dark) .bg-white\/5,
+:root:not(.dark) .bg-white\/8 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+:root:not(.dark) .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+:root:not(.dark) .bg-white\/20,
+:root:not(.dark) .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:root:not(.dark) .bg-black\/30 {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+:root:not(.dark) .border-white\/5,
+:root:not(.dark) .border-white\/8 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+:root:not(.dark) .border-white\/10,
+:root:not(.dark) .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.2) !important;
 }
 
 /* ═══════════════════════════════════════════════════

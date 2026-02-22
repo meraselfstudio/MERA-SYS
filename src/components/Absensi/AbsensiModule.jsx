@@ -298,7 +298,7 @@ const AbsensiModule = ({ onLogin }) => {
                 .from('attendance_photos')
                 .getPublicUrl(fileName);
 
-            // 4. Record attendance
+            // 4. Record attendance locally
             addAbsensi({
                 crewId: selectedCrew?.id,
                 crewName: selectedCrew?.name,
@@ -306,15 +306,32 @@ const AbsensiModule = ({ onLogin }) => {
                 shiftLabel: selectedShift?.label,
                 photoUrl: publicUrl
             });
+
+            // 5. Insert to Supabase DB so checkout has a row to update
+            const { error: insertError } = await supabase.from('attendance').insert([{
+                user_id: selectedCrew?.id,
+                check_in: new Date().toISOString(),
+                photo_url: publicUrl,
+                status: 'active'
+            }]);
+
+            if (insertError) console.error("Failed to insert attendance into DB:", insertError);
         } catch (err) {
             console.error("Failed to upload login photo to Supabase:", err);
-            // Fallback: still record attendance if image fails
+            // Fallback: still record attendance locally if image fails
             addAbsensi({
                 crewId: selectedCrew?.id,
                 crewName: selectedCrew?.name,
                 posisi: selectedCrew?.posisi,
                 shiftLabel: selectedShift?.label,
             });
+
+            // Still try to insert to Supabase DB so checkout works even without photo
+            await supabase.from('attendance').insert([{
+                user_id: selectedCrew?.id,
+                check_in: new Date().toISOString(),
+                status: 'active'
+            }]);
         }
 
         // Direct Login -> Bypass StepSuccess (Salary UI)

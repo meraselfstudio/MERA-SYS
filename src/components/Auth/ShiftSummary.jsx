@@ -73,8 +73,7 @@ const ShiftSummary = ({ onClose }) => {
 
         } catch (error) {
             console.error("Failed to upload face scan or update attendance:", error);
-            // Optionally show an error message to the user here. For now, we still logout.
-            alert("Gagal mengunggah foto absen. Namun session tetap diakhiri.");
+            alert(`Gagal mengunggah foto absen: ${error.message || 'Error tidak diketahui'}\n\nPastikan bucket 'attendance_photos' sudah dibuat di Supabase dan memiliki akses Public/Insert.\n\nSession ini tetap akan diakhiri.`);
         } finally {
             setIsUploading(false);
             logout();

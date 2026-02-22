@@ -35,27 +35,28 @@ const ShiftSummary = ({ onClose }) => {
         setIsUploading(true);
 
         try {
-            // 1. Convert Base64 to Blob
-            const res = await fetch(imageSrc);
-            const blob = await res.blob();
+            // 1. Prepare Base64 Image
             const fileName = `checkout_${user?.id}_${Date.now()}.jpg`;
 
-            // 2. Upload to Supabase Storage (assuming bucket 'attendance_photos' exists)
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('attendance_photos')
-                .upload(fileName, blob, {
-                    contentType: 'image/jpeg',
-                });
+            // 2. Upload to Google Drive via Apps Script
+            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby87hCdRT1l8vXP7zYo6uLzSEAl52-ZrXhkzt3KaJzOmOhmnJYfW_Kbf-CdSf6R86QnbA/exec";
 
-            if (uploadError) {
-                console.error("Upload error details:", uploadError);
-                throw uploadError;
-            }
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8",
+                },
+                body: JSON.stringify({
+                    filename: fileName,
+                    image: imageSrc
+                })
+            });
 
-            // 3. Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('attendance_photos')
-                .getPublicUrl(fileName);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || "Gagal upload ke Google Drive");
+
+            // 3. Get Public URL from Google Drive response
+            const publicUrl = result.url;
 
             // 4. Update Attendance Record in DB
             // Assuming there's an active attendance record for this user today
@@ -73,7 +74,7 @@ const ShiftSummary = ({ onClose }) => {
 
         } catch (error) {
             console.error("Failed to upload face scan or update attendance:", error);
-            alert(`Gagal mengunggah foto absen: ${error.message || 'Error tidak diketahui'}\n\nPastikan bucket 'attendance_photos' sudah dibuat di Supabase dan memiliki akses Public/Insert.\n\nSession ini tetap akan diakhiri.`);
+            alert(`Gagal mengunggah foto absen: ${error.message || 'Error tidak diketahui'}\n\nPastikan Google Script Web App valid.\n\nSession ini tetap akan diakhiri.`);
         } finally {
             setIsUploading(false);
             logout();

@@ -281,22 +281,28 @@ const AbsensiModule = ({ onLogin }) => {
         setSalaryDetails(stats);
 
         try {
-            // 1. Convert Base64 capturedImage to Blob
-            const res = await fetch(capturedImage);
-            const blob = await res.blob();
+            // 1. Prepare Base64 Image
             const fileName = `login_${selectedCrew?.id}_${Date.now()}.jpg`;
 
-            // 2. Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
-                .from('attendance_photos')
-                .upload(fileName, blob, { contentType: 'image/jpeg' });
+            // 2. Upload to Google Drive via Apps Script
+            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby87hCdRT1l8vXP7zYo6uLzSEAl52-ZrXhkzt3KaJzOmOhmnJYfW_Kbf-CdSf6R86QnbA/exec";
 
-            if (uploadError) throw uploadError;
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8",
+                },
+                body: JSON.stringify({
+                    filename: fileName,
+                    image: capturedImage
+                })
+            });
 
-            // 3. Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('attendance_photos')
-                .getPublicUrl(fileName);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || "Gagal upload ke Google Drive");
+
+            // 3. Get Public URL from Google Drive response
+            const publicUrl = result.url;
 
             // 4. Record attendance locally
             addAbsensi({
@@ -317,7 +323,7 @@ const AbsensiModule = ({ onLogin }) => {
 
             if (insertError) console.error("Failed to insert attendance into DB:", insertError);
         } catch (err) {
-            console.error("Failed to upload login photo to Supabase:", err);
+            console.error("Failed to upload login photo to Google Drive:", err);
             // Fallback: still record attendance locally if image fails
             addAbsensi({
                 crewId: selectedCrew?.id,

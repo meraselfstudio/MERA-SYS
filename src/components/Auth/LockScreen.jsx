@@ -72,13 +72,13 @@ const LockScreen = () => {
                             <Lock size={26} className="text-primary" />
                         </div>
                         <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-1">Owner Access</h2>
-                        <p className="text-xs text-gray-600 mb-7">Masukkan PIN untuk akses</p>
+                        <p className="text-xs text-gray-600 mb-7">Insert PIN</p>
                         <div className="flex justify-center gap-3 mb-2">
                             {[0, 1, 2, 3].map(i => (
                                 <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-150 ${i < ownerPin.length ? (showError ? 'bg-red-500 scale-110' : 'bg-primary scale-110') : 'bg-white/10'}`} />
                             ))}
                         </div>
-                        {showError && <p className="text-red-400 text-xs mb-3 font-bold">PIN Salah</p>}
+                        {showError && <p className="text-red-400 text-xs mb-3 font-bold">WRONG PIN</p>}
                         {!showError && <div className="mb-3 h-5" />}
                         <div className="grid grid-cols-3 gap-3 mb-4">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map((d, i) => (
@@ -92,7 +92,7 @@ const LockScreen = () => {
                         </div>
                         <button onClick={() => tryPin(ownerPin)} disabled={ownerPin.length < 4}
                             className="w-full py-3 bg-primary hover:bg-red-700 text-white font-bold rounded-2xl transition-all disabled:opacity-30 flex justify-center items-center gap-2">
-                            <LogIn size={18} /> Masuk
+                            <LogIn size={18} /> Login
                         </button>
                     </div>
                 </div>

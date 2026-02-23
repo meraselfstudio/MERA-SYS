@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
     Lock, DollarSign, TrendingUp, TrendingDown, CreditCard,
     Users, Calendar, ChevronLeft, ChevronRight, Download,
-    Plus, X, Check, Edit3, FileText,
+    Plus, X, Check, Edit3, FileText, UserMinus,
     Wallet, BarChart2, Printer, User, Monitor, Trash2, Upload
 } from 'lucide-react';
 import {
@@ -881,8 +881,10 @@ const GajiTab = () => {
                                                         <Printer size={11} /> Cetak
                                                     </button>
                                                 )}
-                                                <button onClick={() => { if (window.confirm(`Hapus crew ${c.name}?`)) removeCrew(c.id); }}
-                                                    className="p-1.5 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><Trash2 size={13} /></button>
+                                                <button onClick={() => { if (window.confirm(`Tandai crew ${c.name} sebagai Resigned? (Histori Gaji tetap aman)`)) updateCrew(c.id, 'status_gaji', 'RESIGNED'); }}
+                                                    className="p-1.5 text-orange-500/50 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-all" title="Resign Crew">
+                                                    <UserMinus size={13} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

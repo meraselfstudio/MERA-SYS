@@ -55,7 +55,7 @@ const Header = memo(({ currentTime }) => (
 
 const StepSelectCrew = memo(({ crew, onCrewSelect }) => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl w-full">
-        {crew.map((c) => (
+        {crew.filter(c => c.status_gaji !== 'RESIGNED').map((c) => (
             <button
                 key={c.id}
                 onClick={() => onCrewSelect(c)}

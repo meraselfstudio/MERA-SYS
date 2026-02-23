@@ -86,10 +86,6 @@ const NewBookingModal = ({ onClose, onSave, bookings, products }) => {
                             <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">Nama Customer</label>
                             <input required placeholder="Nama..." value={form.name} onChange={set('name')} className={inp} />
                         </div>
-                        <div>
-                            <label className="block text-xs text-gray-500 font-bold uppercase tracking-wide mb-1.5">No. HP / WA</label>
-                            <input placeholder="08..." value={form.phone} onChange={set('phone')} className={inp} />
-                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -805,7 +801,7 @@ const LiveClockHeader = () => {
 
 /* ── MAIN PAGE ──────────────────────────────────── */
 const Dashboard = () => {
-    const [tab, setTab] = useState('checklist');
+    const [tab, setTab] = useState('bookings');
 
     const tabs = [
         { key: 'bookings', icon: <CalendarDays size={15} />, label: 'Bookings' },

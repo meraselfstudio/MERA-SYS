@@ -938,8 +938,7 @@ const FinanceModule = () => {
                         <Download size={13} /> Export CSV
                     </button>
                     <button onClick={() => setUnlocked(false)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-900/20 transition-all"
-                        style={deep}>
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-900/20 transition-all">
                         <Lock size={13} /> Lock
                     </button>
                 </div>

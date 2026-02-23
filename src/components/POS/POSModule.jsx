@@ -82,7 +82,7 @@ const POSModule = () => {
             paket: 'Self Photo Session',
             total_tagihan: 50000,
             tanggal: new Date().toLocaleDateString('en-CA'),
-            jam: '10:00',
+            jam: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
             tipe_bayar: 'KEEPSLOT',
             status: 'AWAITING_CONFIRMATION'
         };

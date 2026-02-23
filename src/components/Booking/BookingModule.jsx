@@ -29,25 +29,20 @@ export default function CustomerBooking() {
     const generateTimeSlots = (dateString) => {
         if (!dateString) return [];
         const date = new Date(dateString);
-        const day = date.getDay(); // 0 is Sunday, 1-4 Mon-Thu, 5-6 Fri-Sat
-
+        const day = date.getDay();
         let slots = [];
-        let time = new Date(date);
-        time.setHours(9, 0, 0, 0); // Start at 09:00
 
-        const endTime = new Date(date);
-        endTime.setHours(21, 0, 0, 0); // End at 21:00
+        // 0 is Sunday, 5-6 is Fri-Sat
+        const isWeekend = (day === 0 || day >= 5);
+        const startHour = isWeekend ? 9 : 12; // 09:00 for weekend, 12:00 for weekday
+        const endHour = 21;
 
-        // Weekday (Senin-Kamis) = 60 menit, Weekend (Jumat-Minggu) = 20 menit
-        const isWeekend = day === 0 || day >= 5;
-        const intervalInMinutes = isWeekend ? 20 : 60;
-
-        while (time < endTime) {
-            const h = time.getHours().toString().padStart(2, '0');
-            const m = time.getMinutes().toString().padStart(2, '0');
-            slots.push(`${h}:${m}`);
-            time.setMinutes(time.getMinutes() + intervalInMinutes);
+        for (let h = startHour; h < endHour; h++) {
+            const hourStr = h.toString().padStart(2, '0');
+            slots.push(`${hourStr}:00`);
+            slots.push(`${hourStr}:30`);
         }
+
         return slots;
     };
 

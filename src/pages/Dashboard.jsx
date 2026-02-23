@@ -27,15 +27,18 @@ const generateTimeSlots = (dateString) => {
     const date = new Date(dateString);
     const day = date.getDay();
     let slots = [];
-    let time = new Date(date);
-    time.setHours(9, 0, 0, 0);
-    const endTime = new Date(date);
-    endTime.setHours(21, 0, 0, 0);
-    const intervalInMinutes = (day === 0 || day >= 5) ? 20 : 60;
-    while (time < endTime) {
-        slots.push(`${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`);
-        time.setMinutes(time.getMinutes() + intervalInMinutes);
+
+    // 0 is Sunday, 5-6 is Fri-Sat
+    const isWeekend = (day === 0 || day >= 5);
+    const startHour = isWeekend ? 9 : 12; // 09:00 for weekend, 12:00 for weekday
+    const endHour = 21;
+
+    for (let h = startHour; h < endHour; h++) {
+        const hourStr = h.toString().padStart(2, '0');
+        slots.push(`${hourStr}:00`);
+        slots.push(`${hourStr}:30`);
     }
+
     return slots;
 };
 

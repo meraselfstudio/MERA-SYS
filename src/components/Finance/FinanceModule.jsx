@@ -8,7 +8,9 @@ import {
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer
 } from 'recharts';
+import Papa from 'papaparse';
 import { useFinance, computeBonus } from '../../context/FinanceContext';
+import { supabase } from '../../lib/supabase';
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const GC = ({ children, className = '', style = {} }) => (
@@ -45,47 +47,85 @@ const PastDataModal = ({ onClose, onSave }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const csv = event.target.result;
-            const lines = csv.split('\n');
-            const headers = lines[0].split(',');
-            // expects: Tanggal,Cash,QRIS,Pengeluaran,Catatan Pengeluaran
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const rows = results.data;
+                let txCount = 0;
+                let attCount = 0;
 
-            let addCount = 0;
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const cols = lines[i].split(',');
-                const date = cols[0]?.trim();
-                const cash = parseInt(cols[1]) || 0;
-                const qris = parseInt(cols[2]) || 0;
-                const expenses = parseInt(cols[3]) || 0;
-                const notes = cols[4]?.trim() || '';
+                // Loop setiap baris CSV
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const date = row['Tanggal']?.trim();
+                    if (!date) continue;
 
-                if (!date) continue;
+                    // 1. PROSES DATA KEUANGAN (TRANSACTIONS)
+                    const cash = parseInt(row['Cash']) || 0;
+                    const qris = parseInt(row['QRIS']) || 0;
+                    const expenses = parseInt(row['Pengeluaran']) || 0;
+                    const notes = row['Catatan Pengeluaran']?.trim() || '';
 
-                if (cash > 0) {
-                    onSave({ id: `HIS-${Date.now()}-${i}-C`, time: '00:00', date, desc: `[CSV] Cash`, type: 'IN', category: 'OTS', amount: cash, method: 'CASH' });
-                    addCount++;
+                    if (cash > 0) {
+                        onSave({ id: `HIS-${Date.now()}-${i}-C`, time: '00:00', date, desc: `[CSV] Cash`, type: 'IN', category: 'OTS', amount: cash, method: 'CASH' });
+                        txCount++;
+                    }
+                    if (qris > 0) {
+                        onSave({ id: `HIS-${Date.now()}-${i}-Q`, time: '00:00', date, desc: `[CSV] QRIS`, type: 'IN', category: 'OTS', amount: qris, method: 'QRIS' });
+                        txCount++;
+                    }
+                    if (expenses > 0) {
+                        onSave({ id: `HIS-${Date.now()}-${i}-E`, time: '00:00', date, desc: `Expense${notes ? ': ' + notes : ''}`, type: 'OUT', category: 'Expense', amount: expenses, method: 'CASH' });
+                        txCount++;
+                    }
+
+                    // 2. PROSES DATA HRD (ATTENDANCE)
+                    const processCrewAttendance = async (crewKey, shiftKey, lateKey) => {
+                        const crewIdStr = row[crewKey]?.trim();
+                        if (!crewIdStr) return; // Ignore if Crew field is empty
+
+                        const crewId = parseInt(crewIdStr) || 0;
+                        const shiftCount = parseInt(row[shiftKey]) || 1;
+                        const lateMinutes = parseInt(row[lateKey]) || 0;
+
+                        // Create dummy timestamp using the Tanggal
+                        const dummyCheckIn = new Date(`${date}T09:00:00`).toISOString();
+
+                        try {
+                            const { error: attError } = await supabase.from('attendance').insert([{
+                                user_id: crewId,
+                                check_in: dummyCheckIn,
+                                status: 'completed', // Langsung selesai
+                                shift_count: shiftCount,
+                                late_minutes: lateMinutes
+                            }]);
+
+                            if (attError) throw attError;
+                            attCount++;
+
+                        } catch (err) {
+                            console.error(`Gagal insert attendance untuk ${crewKey} pada ${date}:`, err);
+                        }
+                    };
+
+                    await processCrewAttendance('Crew_1', 'Shift_1', 'Telat_1');
+                    await processCrewAttendance('Crew_2', 'Shift_2', 'Telat_2');
                 }
-                if (qris > 0) {
-                    onSave({ id: `HIS-${Date.now()}-${i}-Q`, time: '00:00', date, desc: `[CSV] QRIS`, type: 'IN', category: 'OTS', amount: qris, method: 'QRIS' });
-                    addCount++;
-                }
-                if (expenses > 0) {
-                    onSave({ id: `HIS-${Date.now()}-${i}-E`, time: '00:00', date, desc: `Expense${notes ? ': ' + notes : ''}`, type: 'OUT', category: 'Expense', amount: expenses, method: 'CASH' });
-                    addCount++;
-                }
+
+                alert(`Berhasil import ${txCount} transaksi dan ${attCount} record absensi HRD.`);
+                onClose();
+            },
+            error: (error) => {
+                console.error("Gagal membaca CSV:", error);
+                alert("Format CSV tidak valid atau gagal dibaca.");
             }
-            alert(`Berhasil import ${addCount} transaksi.`);
-            onClose();
-        };
-        reader.readAsText(file);
+        });
     };
 
     const downloadTemplate = () => {
-        const template = 'Tanggal,Cash,QRIS,Pengeluaran,Catatan Pengeluaran\n2025-01-01,100000,50000,20000,Beli Kertas';
-        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([template], { type: 'text/csv' })), download: 'Template_Mera_Transactions.csv' });
+        const template = 'Tanggal,Cash,QRIS,Pengeluaran,Catatan Pengeluaran,Crew_1,Shift_1,Telat_1,Crew_2,Shift_2,Telat_2\n2024-01-15,100000,50000,20000,Beli Kertas,1,1,0,2,1,15';
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([template], { type: 'text/csv' })), download: 'Template_Mera_Finance_HRD.csv' });
         a.click();
     };
 

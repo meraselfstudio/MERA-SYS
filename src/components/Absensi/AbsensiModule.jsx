@@ -11,18 +11,24 @@ import { supabase } from '../../lib/supabase';
 
 // Weekday = Senin–Kamis (getDay 1–4), Weekend = Jumat–Minggu (getDay 5,6,0)
 const SHIFTS = [
-    { id: 'weekday_full', label: 'Weekday Full Time', time: '12:00 – 21:00', salary: 75000, isWeekend: false },
-    { id: 'weekend_shift1', label: 'Weekend Shift 1', time: '09:00 – 15:00', salary: 35000, isWeekend: true },
-    { id: 'weekend_shift2', label: 'Weekend Shift 2', time: '15:00 – 21:00', salary: 35000, isWeekend: true },
-    { id: 'weekend_full', label: 'Weekend Full Time', time: '09:00 – 21:00', salary: 100000, isWeekend: true },
+    { id: 'weekday_full', label: 'Weekday Full Time', time: '12:00 – 21:00', salary: 75000, isWeekend: false, startHour: 12, startMin: 0 },
+    { id: 'weekend_shift1', label: 'Weekend Shift 1', time: '09:00 – 15:00', salary: 35000, isWeekend: true, startHour: 9, startMin: 0 },
+    { id: 'weekend_shift2', label: 'Weekend Shift 2', time: '15:00 – 21:00', salary: 35000, isWeekend: true, startHour: 15, startMin: 0 },
+    { id: 'weekend_full', label: 'Weekend Full Time', time: '09:00 – 21:00', salary: 100000, isWeekend: true, startHour: 9, startMin: 0 },
 ];
 
 // Auto-pick the most likely shift based on current day & hour
-const getAutoShift = (now = new Date()) => {
+const getAutoShift = (now = new Date(), activeProdCrewCount = 0) => {
     const day = now.getDay();  // 0=Sun,1=Mon,...,6=Sat
     const hour = now.getHours();
     const isWeekend = day === 0 || day >= 5; // Fri/Sat/Sun
     if (!isWeekend) return SHIFTS.find(s => s.id === 'weekday_full');
+
+    // Jika weekend dan belum ada crew pro lain yang login, default ke full time
+    if (activeProdCrewCount === 0 && hour < 15) {
+        return SHIFTS.find(s => s.id === 'weekend_full');
+    }
+
     if (hour < 15) return SHIFTS.find(s => s.id === 'weekend_shift1');
     return SHIFTS.find(s => s.id === 'weekend_shift2');
 };
@@ -226,11 +232,10 @@ const StepSuccess = memo(({ selectedCrew, salaryDetails, onFinish, hasOnLogin })
         </button>
     </div>
 ));
-
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 const AbsensiModule = ({ onLogin }) => {
-    const { crew, addAbsensi } = useFinance();
+    const { crew, addAbsensi, updateCrew } = useFinance();
     const navigate = useNavigate();
     const [step, setStep] = useState('select-crew');
     const [selectedCrew, setSelectedCrew] = useState(null);
@@ -275,10 +280,40 @@ const AbsensiModule = ({ onLogin }) => {
 
     const confirmAbsensi = async () => {
         const base = selectedShift?.salary || 0;
-        const bonus = selectedShift?.id.includes('weekend') ? 10000 : 0;
-        const denda = 0;
+
+        // Bonus hitung di akhir via FinanceModule, di sini pass 0 (untuk UI sementara)
+        const bonus = 0;
+
+        // Denda Keterlambatan Logic
+        // SOP Wajib = Hadir 30 menit sebelum jam operasional dimulai (startHour:startMin)
+        let denda = 0;
+        if (selectedShift && selectedShift.id !== 'intern') {
+            const shiftStart = new Date();
+            shiftStart.setHours(selectedShift.startHour, selectedShift.startMin, 0, 0);
+
+            // "Harus masuk 30 menit sebelum shift"
+            const wajibHadir = new Date(shiftStart.getTime() - 30 * 60000);
+
+            // "Batas toleransi 10 menit"
+            const toleransiHadir = new Date(wajibHadir.getTime() + 10 * 60000);
+
+            if (currentTime > toleransiHadir) {
+                // Kena denda 5000 per 10 menit setelah batas toleransi
+                const diffMs = currentTime - toleransiHadir;
+                const hitungKelipatanSepuluhMenit = Math.ceil(diffMs / (10 * 60000));
+                if (hitungKelipatanSepuluhMenit > 0) {
+                    denda = hitungKelipatanSepuluhMenit * 5000;
+                }
+            }
+        }
+
         const stats = { base, bonus, denda, total: base + bonus - denda };
         setSalaryDetails(stats);
+
+        // Langsung simpan akumulasi denda ke kru terkait jika ada telat
+        if (denda > 0 && selectedCrew?.id) {
+            updateCrew(selectedCrew.id, 'denda', (selectedCrew.denda || 0) + denda);
+        }
 
         try {
             // 1. Prepare Base64 Image

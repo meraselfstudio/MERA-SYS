@@ -42,13 +42,21 @@ export const SHIFT_CONFIG = {
 };
 
 /* ─── Bonus Logic ──────────────────────────────────── */
-// Weekday target: Rp 1,000,000 → bonus Rp 20,000 + Rp 5,000/kelipatan Rp 50,000 di atas target
-// Weekend target: Rp 1,500,000 → bonus Rp 20,000 + Rp 5,000/kelipatan Rp 50,000 di atas target
-export const computeBonus = (revenue, isWeekend) => {
-    const target = isWeekend ? 1_500_000 : 1_000_000;
-    if (revenue < target) return 0;
-    const steps = Math.floor((revenue - target) / 50_000);
-    return 20_000 + steps * 5_000;
+// Weekday: Target Rp 1.000.000 -> Bonus Rp 20.000/crew. Tiap +Rp 50.000 -> Bonus +Rp 5.000/crew
+// Weekend: Target Rp 1.500.000 -> Total Bonus Rp 20.000. Tiap +Rp 50.000 -> Total Bonus +Rp 5.000. DIBAGI RATA jumlah crew.
+export const computeBonus = (revenue, isWeekend, crewCount = 1) => {
+    if (isWeekend) {
+        const target = 1_500_000;
+        if (revenue < target) return 0;
+        const steps = Math.floor((revenue - target) / 50_000);
+        const totalBonus = 20_000 + steps * 5_000;
+        return Math.floor(totalBonus / Math.max(1, crewCount));
+    } else {
+        const target = 1_000_000;
+        if (revenue < target) return 0;
+        const steps = Math.floor((revenue - target) / 50_000);
+        return 20_000 + steps * 5_000;
+    }
 };
 
 /* ─── Helpers ──────────────────────────────────────── */

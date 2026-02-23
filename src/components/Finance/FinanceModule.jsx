@@ -689,10 +689,18 @@ const GajiTab = () => {
             let workDays = 0, totalBonus = 0;
             for (let d = 1; d <= daysInMonth; d++) {
                 const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                // Count how many non-intern crews would work on this day based on their shift setting
+                const activeCrewsToday = crew.filter(other => {
+                    if (other.status_gaji === 'INTERN') return false;
+                    const isOtherWeekendShift = other.shift?.includes('weekend');
+                    return isOtherWeekendShift ? isWeekendDay(ds) : !isWeekendDay(ds);
+                }).length;
+
                 const weekend = isWeekendDay(ds);
                 if (shiftIsWeekend ? !weekend : weekend) continue;
                 workDays++;
-                totalBonus += computeBonus(dailyRevenue[ds] || 0, weekend);
+                // Pass revenue, weekend flag, and the number of active crews for that day
+                totalBonus += computeBonus(dailyRevenue[ds] || 0, weekend, activeCrewsToday);
             }
             const totalBase = (c.base || 0) * workDays;
             const manualBonus = c.bonus || 0;

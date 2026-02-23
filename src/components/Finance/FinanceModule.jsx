@@ -398,14 +398,25 @@ const BulananTab = ({ transactions, addExpense }) => {
     };
 
     const perDay = useMemo(() => {
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const getPeriodDates = (y, m) => {
+            const dates = [];
+            const d = new Date(y, m - 1, 26);
+            const end = new Date(y, m, 25);
+            while (d <= end) {
+                dates.push(d.toISOString().slice(0, 10));
+                d.setDate(d.getDate() + 1);
+            }
+            return dates;
+        };
+
+        const activeDates = getPeriodDates(year, month);
         const days = [];
 
         // Initialize days
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            days.push({ date: dateStr, day: d, rev: 0, exp: 0, net: 0, cash: 0, qris: 0 });
-        }
+        activeDates.forEach(dateStr => {
+            const dayNum = parseInt(dateStr.split('-')[2], 10);
+            days.push({ date: dateStr, day: dayNum, rev: 0, exp: 0, net: 0, cash: 0, qris: 0 });
+        });
 
         // Aggregate transactions
         const map = days.reduce((acc, curr) => ({ ...acc, [curr.date]: curr }), {});
@@ -703,13 +714,25 @@ const GajiTab = () => {
 
     const inp = "bg-black/40 border border-white/8 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-primary placeholder-gray-700";
 
-    // Per-day revenue map for this month
+    // Per-day revenue map spanning from PrevMonth 26th -> CurrentMonth 25th
+    const getPeriodDates = (y, m) => {
+        const dates = [];
+        const d = new Date(y, m - 1, 26); // Start 26th of previous month
+        const end = new Date(y, m, 25);   // End 25th of current month
+        while (d <= end) {
+            dates.push(d.toISOString().slice(0, 10));
+            d.setDate(d.getDate() + 1);
+        }
+        return dates;
+    };
+
     const dailyRevenue = useMemo(() => {
+        const activeDates = getPeriodDates(year, month);
         const map = {};
         transactions.forEach(t => {
             if (t.type !== 'IN' || !t.date) return;
-            const [y, m] = t.date.split('-').map(Number);
-            if (y === year && m - 1 === month) {
+            // Only aggregate if transaction date falls within the 26th-25th window
+            if (activeDates.includes(t.date)) {
                 map[t.date] = (map[t.date] || 0) + t.amount;
             }
         });
@@ -718,18 +741,18 @@ const GajiTab = () => {
 
     const isWeekendDay = (dateStr) => { const d = new Date(dateStr + 'T00:00:00'); return d.getDay() === 0 || d.getDay() === 6; };
 
-    // Compute monthly totals per crew
+    // Compute monthly totals per crew (26th to 25th)
     const crewStats = useMemo(() => {
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const activeDates = getPeriodDates(year, month);
+
         return crew.map(c => {
             if (c.status_gaji === 'INTERN') {
                 return { ...c, workDays: 0, totalBase: 0, totalBonus: 0, manualBonus: 0, total: 0 };
             }
             const shiftIsWeekend = c.shift?.includes('weekend');
             let workDays = 0, totalBonus = 0;
-            for (let d = 1; d <= daysInMonth; d++) {
-                const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                // Count how many non-intern crews would work on this day based on their shift setting
+
+            activeDates.forEach(ds => {
                 const activeCrewsToday = crew.filter(other => {
                     if (other.status_gaji === 'INTERN') return false;
                     const isOtherWeekendShift = other.shift?.includes('weekend');
@@ -737,11 +760,12 @@ const GajiTab = () => {
                 }).length;
 
                 const weekend = isWeekendDay(ds);
-                if (shiftIsWeekend ? !weekend : weekend) continue;
+                if (shiftIsWeekend ? !weekend : weekend) return; // continue equivalent
+
                 workDays++;
-                // Pass revenue, weekend flag, and the number of active crews for that day
                 totalBonus += computeBonus(dailyRevenue[ds] || 0, weekend, activeCrewsToday);
-            }
+            });
+
             const totalBase = (c.base || 0) * workDays;
             const manualBonus = c.bonus || 0;
             const totalDenda = c.denda || 0;

@@ -427,6 +427,9 @@ export const FinanceProvider = ({ children }) => {
             const [y, m] = a.date.split('-');
             return !(Number(y) === year && Number(m) === month + 1);
         }));
+
+        // Reset manual bonus and denda for the targeted month
+        setCrew(prev => prev.map(c => ({ ...c, bonus: 0, denda: 0 })));
     }, []);
 
     /* ── Reset ALL data ────────────────────────────── */
@@ -451,7 +454,7 @@ export const FinanceProvider = ({ children }) => {
         setTransactions([]);
         setExpenses([]);
         setBookings([]);
-        setCrew(INIT_CREW);
+        setCrew(INIT_CREW.map(c => ({ ...c, bonus: 0, denda: 0 }))); // Ensure reset bonus/denda
         setProducts(INIT_PRODUCTS);
         setAbsensi([]);
     }, []);

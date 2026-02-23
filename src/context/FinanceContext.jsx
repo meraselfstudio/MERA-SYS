@@ -11,11 +11,11 @@ const KEYS = {
 
 /* ─── Crew from crew.csv ───────────────────────────── */
 export const INIT_CREW = [
-    { id: 1, name: 'Satria', posisi: 'Crew', status_gaji: 'PRO', shift: 'weekday_full', base: 75000, denda: 0 },
-    { id: 2, name: 'Umar', posisi: 'Crew', status_gaji: 'PRO', shift: 'weekend_full', base: 50000, denda: 0 },
-    { id: 3, name: 'Ena', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0 },
-    { id: 4, name: 'David', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0 },
-    { id: 5, name: 'Abel', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0 },
+    { id: 1, name: 'Satria', posisi: 'Crew', status_gaji: 'PRO', shift: 'weekday_full', base: 0, denda: 0, bonus: 0 },
+    { id: 2, name: 'Umar', posisi: 'Crew', status_gaji: 'PRO', shift: 'weekend_full', base: 0, denda: 0, bonus: 0 },
+    { id: 3, name: 'Ena', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0, bonus: 0 },
+    { id: 4, name: 'David', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0, bonus: 0 },
+    { id: 5, name: 'Abel', posisi: 'Intern', status_gaji: 'INTERN', shift: 'intern', base: 0, denda: 0, bonus: 0 },
 ];
 
 export const INIT_PRODUCTS = [
@@ -430,6 +430,9 @@ export const FinanceProvider = ({ children }) => {
 
         // Reset manual bonus and denda for the targeted month
         setCrew(prev => prev.map(c => ({ ...c, bonus: 0, denda: 0 })));
+
+        // Remove monthly intern sessions if needed (we'll just wipe all for safety on manual reset)
+        localStorage.removeItem('intern_sessions');
     }, []);
 
     /* ── Reset ALL data ────────────────────────────── */
@@ -450,6 +453,7 @@ export const FinanceProvider = ({ children }) => {
         localStorage.removeItem('checklist_v2');
         localStorage.removeItem('checklist_tabs_v1');
         localStorage.removeItem('mera_user');
+        localStorage.removeItem('intern_sessions');
         localStorage.removeItem(todayKey());
         setTransactions([]);
         setExpenses([]);

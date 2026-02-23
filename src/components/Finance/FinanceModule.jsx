@@ -753,6 +753,10 @@ const GajiTab = () => {
             let workDays = 0, totalBonus = 0;
 
             activeDates.forEach(ds => {
+                // If the studio had no transactions/revenue on this day, we don't count it as a workday
+                const isOperational = (dailyRevenue[ds] > 0);
+                if (!isOperational) return;
+
                 const activeCrewsToday = crew.filter(other => {
                     if (other.status_gaji === 'INTERN') return false;
                     const isOtherWeekendShift = other.shift?.includes('weekend');

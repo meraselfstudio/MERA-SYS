@@ -611,34 +611,37 @@ const SlipGaji = ({ crew, month, year }) => {
     const total = crew.totalBase + crew.totalBonus + crew.manualBonus - crew.totalDenda;
     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     return (
-        <div id={`slip-${crew.id}`} className="hidden-print p-6 bg-white text-black text-sm font-sans" style={{ width: '320px', fontFamily: 'Arial,sans-serif' }}>
+        <div id={`slip-${crew.id}`} className="hidden-print p-6 bg-white text-black font-sans" style={{ width: '320px', fontSize: '12px', fontFamily: 'Arial,sans-serif' }}>
             <div className="text-center mb-4">
-                <p className="font-black text-xl">MÉRA SELFSTUDIOS</p>
-                <p className="text-xs text-gray-600">Slip Gaji Bulanan</p>
-                <p className="text-xs text-gray-500">{MONTH_NAMES[month]} {year}</p>
-                <hr className="my-2" />
+                <img src="/logo-mera-maroon.png" alt="Méra Logo" style={{ width: '120px', height: 'auto', margin: '0 auto 10px', display: 'block' }} />
+                <p className="font-black text-lg m-0">MÉRA SELFSTUDIOS</p>
+                <p className="text-[10px] text-gray-500 m-0">Slip Gaji Bulanan</p>
+                <p className="text-[10px] text-gray-400 m-0 font-bold">{MONTH_NAMES[month]} {year}</p>
             </div>
+            <hr className="my-2 border-t border-dashed border-gray-300" />
             <table className="w-full text-xs mb-3">
                 <tbody>
-                    <tr><td className="py-0.5 text-gray-500">Nama</td><td className="font-bold">{crew.name}</td></tr>
-                    <tr><td className="py-0.5 text-gray-500">Total Hari Kerja</td><td>{crew.workDays} Hari</td></tr>
-                    <tr><td className="py-0.5 text-gray-500">Tanggal Cetak</td><td>{today}</td></tr>
+                    <tr><td className="py-0.5 text-gray-500">Nama Crew</td><td className="font-bold text-right">{crew.name}</td></tr>
+                    <tr><td className="py-0.5 text-gray-500">Posisi / Shift</td><td className="text-right">{crew.posisi}</td></tr>
+                    <tr><td className="py-0.5 text-gray-500">Total Hari Kerja</td><td className="text-right">{crew.workDays} Hari</td></tr>
+                    <tr><td className="py-0.5 text-gray-500">Tanggal Cetak</td><td className="text-right">{today}</td></tr>
                 </tbody>
             </table>
-            <hr className="my-2" />
+            <hr className="my-2 border-t border-dashed border-gray-300" />
+            <p className="font-bold text-xs mb-1">Rincian Pendapatan</p>
             <table className="w-full text-xs mb-2">
                 <tbody>
-                    <tr><td className="py-1">Gaji Pokok</td><td className="text-right font-bold">{fmt(crew.totalBase)}</td></tr>
-                    {crew.totalBonus > 0 && <tr><td className="py-1 text-green-700">+ Bonus Omset</td><td className="text-right text-green-700 font-bold">+{fmt(crew.totalBonus)}</td></tr>}
-                    {crew.manualBonus > 0 && <tr><td className="py-1 text-green-700">+ Bonus Manual</td><td className="text-right text-green-700 font-bold">+{fmt(crew.manualBonus)}</td></tr>}
-                    {crew.totalDenda > 0 && <tr><td className="py-1 text-red-700">− Denda</td><td className="text-right text-red-700 font-bold">−{fmt(crew.totalDenda)}</td></tr>}
+                    <tr><td className="py-1">Gaji Pokok</td><td className="text-right font-bold w-1/2 justify-end"><span>Rp</span> {Number(crew.totalBase).toLocaleString('id-ID')}</td></tr>
+                    {crew.totalBonus > 0 && <tr><td className="py-1 text-green-700">+ Bonus Omset</td><td className="text-right text-green-700 font-bold justify-end"><span>Rp</span> {Number(crew.totalBonus).toLocaleString('id-ID')}</td></tr>}
+                    {crew.manualBonus > 0 && <tr><td className="py-1 text-green-700">+ Bonus Manual</td><td className="text-right text-green-700 font-bold justify-end"><span>Rp</span> {Number(crew.manualBonus).toLocaleString('id-ID')}</td></tr>}
+                    {crew.totalDenda > 0 && <tr><td className="py-1 text-red-700">− Potongan / Denda</td><td className="text-right text-red-700 font-bold justify-end"><span>Rp</span> {Number(crew.totalDenda).toLocaleString('id-ID')}</td></tr>}
                 </tbody>
             </table>
-            <hr className="my-2" />
-            <div className="flex justify-between font-black text-base">
-                <span>TOTAL</span><span>{fmt(total)}</span>
+            <hr className="my-2 border-t border-dashed border-gray-300" />
+            <div className="flex justify-between font-black text-sm pt-1">
+                <span>TOTAL DITERIMA</span><span>{fmt(total)}</span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-4 text-center">Diterbitkan oleh sistem MÉRA POS</p>
+            <p className="text-[9px] text-gray-400 mt-5 pt-3 border-t border-gray-100 text-center font-bold">Diterbitkan oleh Méra Operating System 2026</p>
         </div>
     );
 };
@@ -648,34 +651,46 @@ const downloadSlip = (crew, month, year) => {
     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:20px;width:280px}
-.title{font-size:16px;font-weight:900;text-align:center} .sub{color:#888;text-align:center;font-size:10px}
-hr{margin:8px 0;border:none;border-top:1px solid #ddd}
-table{width:100%;border-collapse:collapse} td{padding:2px 0}
-.right{text-align:right} .bold{font-weight:700} .green{color:#166534} .red{color:#991b1b}
-.total{font-weight:900;font-size:14px} .footer{color:#aaa;font-size:9px;text-align:center;margin-top:12px}
+<style>body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:24px;width:300px;color:#111;}
+.logo{display:block;margin:0 auto 10px;width:120px;height:auto;}
+.header{text-align:center;margin-bottom:12px;}
+.title{font-size:16px;font-weight:900;margin:0;} .sub{color:#666;font-size:10px;margin:2px 0 0;}
+hr{margin:10px 0;border:none;border-top:1px dashed #ccc;}
+table{width:100%;border-collapse:collapse;} td{padding:3px 0;}
+.right{text-align:right;} .bold{font-weight:700;} .green{color:#166534;} .red{color:#991b1b;}
+.section-title{font-weight:700;margin:0 0 4px;font-size:11px;}
+.flex-val{display:flex;justify-content:space-between;padding-left:16px;}
+.total-row{font-weight:900;font-size:14px;padding-top:6px;}
+.footer{color:#888;font-size:9px;text-align:center;margin-top:20px;font-weight:bold;padding-top:10px;border-top:1px dashed #eee;}
 </style></head><body>
-<p class="title">MÉRA SELFSTUDIOS</p>
-<p class="sub">Slip Gaji Bulanan<br/>${MONTH_NAMES[month]} ${year}</p>
-<hr/>
-<table><tr><td style="color:#888">Nama</td><td class="right bold">${crew.name}</td></tr>
-<tr><td style="color:#888">Total Hari Kerja</td><td class="right">${crew.workDays} Hari</td></tr>
-<tr><td style="color:#888">Tanggal Cetak</td><td class="right">${today}</td></tr></table>
+<div class="header">
+  <img src="/logo-mera-maroon.png" class="logo" alt="Mera Logo" onerror="this.style.display='none'" />
+  <p class="title">MÉRA SELFSTUDIOS</p>
+  <p class="sub">Slip Gaji Bulanan<br/><b>${MONTH_NAMES[month]} ${year}</b></p>
+</div>
 <hr/>
 <table>
-<tr><td>Gaji Pokok</td><td class="right bold">${fmt(crew.totalBase)}</td></tr>
-${crew.totalBonus > 0 ? `<tr><td class="green">+ Bonus Omset</td><td class="right bold green">+${fmt(crew.totalBonus)}</td></tr>` : ''}
-${crew.manualBonus > 0 ? `<tr><td class="green">+ Bonus Manual</td><td class="right bold green">+${fmt(crew.manualBonus)}</td></tr>` : ''}
-${crew.totalDenda > 0 ? `<tr><td class="red">− Denda</td><td class="right bold red">−${fmt(crew.totalDenda)}</td></tr>` : ''}
+<tr><td style="color:#666">Nama Crew</td><td class="right bold">${crew.name}</td></tr>
+<tr><td style="color:#666">Posisi / Shift</td><td class="right">${crew.posisi}</td></tr>
+<tr><td style="color:#666">Total Hari Kerja</td><td class="right">${crew.workDays} Hari</td></tr>
+<tr><td style="color:#666">Tanggal Cetak</td><td class="right">${today}</td></tr>
 </table>
 <hr/>
-<table><tr><td class="total">TOTAL</td><td class="total right">${fmt(total)}</td></tr></table>
-<p class="footer">Diterbitkan oleh sistem MÉRA POS</p>
+<p class="section-title">Rincian Pendapatan</p>
+<table>
+<tr><td>Gaji Pokok</td><td class="right bold"><div class="flex-val"><span>Rp</span><span>${Number(crew.totalBase).toLocaleString('id-ID')}</span></div></td></tr>
+${crew.totalBonus > 0 ? `<tr><td class="green">+ Bonus Omset</td><td class="right bold green"><div class="flex-val"><span>Rp</span><span>${Number(crew.totalBonus).toLocaleString('id-ID')}</span></div></td></tr>` : ''}
+${crew.manualBonus > 0 ? `<tr><td class="green">+ Bonus Manual</td><td class="right bold green"><div class="flex-val"><span>Rp</span><span>${Number(crew.manualBonus).toLocaleString('id-ID')}</span></div></td></tr>` : ''}
+${crew.totalDenda > 0 ? `<tr><td class="red">− Potongan / Denda</td><td class="right bold red"><div class="flex-val"><span>Rp</span><span>${Number(crew.totalDenda).toLocaleString('id-ID')}</span></div></td></tr>` : ''}
+</table>
+<hr/>
+<table><tr><td class="total-row">TOTAL DITERIMA</td><td class="total-row right">${fmt(total)}</td></tr></table>
+<p class="footer">Diterbitkan oleh Méra Operating System 2026</p>
 </body></html>`;
-    const w = window.open('', '_blank', 'width=350,height=500');
+    const w = window.open('', '_blank', 'width=380,height=600');
     w.document.write(html);
     w.document.close();
-    w.onload = () => { w.print(); };
+    w.onload = () => { setTimeout(() => w.print(), 500); };
 };
 
 /* ══════════════════════════════════════════════════════════════════

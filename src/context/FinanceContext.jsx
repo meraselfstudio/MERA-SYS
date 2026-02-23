@@ -387,7 +387,26 @@ export const FinanceProvider = ({ children }) => {
     }, []);
 
     /* ── Reset Targeted Month data ─────────────────────── */
-    const resetMonth = useCallback((year, month) => {
+    const resetMonth = useCallback(async (year, month) => {
+        const monthStr = String(month + 1).padStart(2, '0');
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const startYMD = `${year}-${monthStr}-01`;
+        const endYMD = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+
+        const startTimestamp = new Date(year, month, 1).toISOString();
+        const endTimestamp = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString();
+
+        try {
+            await Promise.all([
+                supabase.from('transactions').delete().gte('created_at', startTimestamp).lte('created_at', endTimestamp),
+                supabase.from('expenses').delete().gte('date', startYMD).lte('date', endYMD),
+                supabase.from('bookings').delete().gte('tanggal', startYMD).lte('tanggal', endYMD),
+                supabase.from('attendance').delete().gte('check_in', startTimestamp).lte('check_in', endTimestamp)
+            ]);
+        } catch (err) {
+            console.error("Failed to delete monthly data from Supabase:", err);
+        }
+
         setTransactions(prev => prev.filter(t => {
             if (!t.date) return true;
             const [y, m] = t.date.split('-');
@@ -398,16 +417,32 @@ export const FinanceProvider = ({ children }) => {
             const [y, m] = e.date.split('-');
             return !(Number(y) === year && Number(m) === month + 1);
         }));
-        // Optional: you can also clear bookings for that month if needed
         setBookings(prev => prev.filter(b => {
             if (!b.date) return true;
             const [y, m] = b.date.split('-');
             return !(Number(y) === year && Number(m) === month + 1);
         }));
+        setAbsensi(prev => prev.filter(a => {
+            if (!a.date) return true;
+            const [y, m] = a.date.split('-');
+            return !(Number(y) === year && Number(m) === month + 1);
+        }));
     }, []);
 
     /* ── Reset ALL data ────────────────────────────── */
-    const resetAll = useCallback(() => {
+    const resetAll = useCallback(async () => {
+        try {
+            // Delete all data from Supabase
+            await Promise.all([
+                supabase.from('transactions').delete().not('id', 'is', null),
+                supabase.from('expenses').delete().not('id', 'is', null),
+                supabase.from('bookings').delete().not('id', 'is', null),
+                supabase.from('attendance').delete().not('id', 'is', null)
+            ]);
+        } catch (err) {
+            console.error("Failed to delete all data from Supabase:", err);
+        }
+
         Object.values(KEYS).forEach(k => localStorage.removeItem(k));
         localStorage.removeItem('checklist_v2');
         localStorage.removeItem('checklist_tabs_v1');

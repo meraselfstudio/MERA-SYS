@@ -145,17 +145,21 @@ const OwnerToolsSection = () => {
                                 {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
                             </select>
                             <input type="number" className="w-16 bg-black/40 border border-white/10 text-white rounded-lg px-2 py-1 text-xs" value={resetYr} onChange={e => setResetYr(Number(e.target.value))} />
-                            <button onClick={() => {
-                                if (window.confirm(`Yakin reset data untuk ${MONTHS[resetMo]} ${resetYr}?`)) resetMonth(resetYr, resetMo);
+                            <button onClick={async () => {
+                                if (window.confirm(`Yakin reset data untuk ${MONTHS[resetMo]} ${resetYr}?`)) {
+                                    await resetMonth(resetYr, resetMo);
+                                    window.alert(`Data untuk ${MONTHS[resetMo]} ${resetYr} berhasil dihapus.`);
+                                }
                             }} className="p-1.5 rounded-lg bg-red-900/40 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
                                 <Trash2 size={14} />
                             </button>
                         </div>
                     </Row>
                     <Row title="TOTAL RESET" description="⚠️  HAPUS SEMUA DATA  ⚠️"
-                        onClick={() => {
+                        onClick={async () => {
                             if (window.confirm('Reset SEMUA data aplikasi?\n\n• Semua transaksi Finance\n• Semua data Booking\n• Checklist & progress\n\nTidak bisa dibatalkan!')) {
-                                resetAll(); logout();
+                                await resetAll();
+                                logout();
                             }
                         }} chevron danger>
                         <Trash2 size={15} className="text-red-900" />

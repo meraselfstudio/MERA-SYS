@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'DASHBOARD' },
         { to: '/pos', icon: <ShoppingCart size={20} />, label: 'POS' },
         { to: '/finance', icon: <Wallet size={20} />, label: 'FINANCE' },
-        { to: '/absensi', icon: <UserCheck size={20} />, label: 'CREW LOGIN' },
+        { to: '/absensi', icon: <UserCheck size={20} />, label: 'ABSENSI' },
         { to: '/settings', icon: <SettingsIcon size={20} />, label: 'SETTINGS' },
     ];
 
@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {/* Header / Logo */}
                 <div className={`h-32 flex items-center justify-center border-b border-white/5 p-6 transition-all duration-500 ${collapsed ? 'h-24 p-2' : ''}`}>
                     <div className={`transition-transform duration-500 ${collapsed ? 'scale-75' : 'scale-110'}`}>
-                        <MeraLogo className="h-full w-auto max-h-20" />
+                        <MeraLogo className="h-full w-auto max-h-20" variant="white" />
                     </div>
                 </div>
 
